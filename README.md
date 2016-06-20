@@ -1,4 +1,4 @@
-# relaxation step for a dense M-by-N matrix
+# Relaxation step for a dense M-by-N matrix
 
 ```
 double relax_step(double *A, int m, int n, int stride, double *b, double *x0, double *x1, double *res, double w);

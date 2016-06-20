@@ -20,7 +20,7 @@ main(int argc, char *argv[])
 	gettimeofday(&tval, NULL);
 	srand48(tval.tv_sec ^ tval.tv_usec);
 	m = 1000;
-	n = m;
+	n = 1000;
 	stride = n;
 	A = malloc(m * stride * sizeof A[0]);
 	b = malloc(m * sizeof b[0]);
@@ -53,12 +53,12 @@ main(int argc, char *argv[])
 
 		if(!jacobi)
 			x1 = x0;
-		for(i = 0; i < 50; i++){
+		for(i = 0; i < 100; i++){
 			double *tmp;
 			if(!jacobi)
 				maxres = relax_step(A, m, n, stride, b, x0, x1, res, 0.9); // for gauss-seidel
 			else
-				maxres = relax_step(A, m, n, stride, b, x0, x1, res, 0.65); // for jacobi
+				maxres = relax_step(A, m, n, stride, b, x0, x1, res, 0.6); // for jacobi
 			tmp = x0;
 			x0 = x1;
 			x1 = tmp;
