@@ -4,7 +4,7 @@
 double
 relax_step(double *A, int m, int n, int stride, double *b, double *x0, double *x1, double *res, double w)
 {
-	double sigma, rowres, maxres;
+	double sigma, rowres, maxres, diag;
 	int i, j, irow;
 
 	maxres = 0.0;
@@ -21,7 +21,8 @@ relax_step(double *A, int m, int n, int stride, double *b, double *x0, double *x
 				sigma += tmp;
 		}
 
-		x1[i] = (1.0 - w)*x0[i] + w*(b[i] - sigma) / A[irow+i];
+		diag = i < n ? A[irow+i] : 1.0;
+		x1[i] = (1.0 - w)*x0[i] + w*(b[i] - sigma) / diag;
 
 		rowres = b[i] - rowres;
 		res[i] = rowres;
