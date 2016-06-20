@@ -1,5 +1,8 @@
 # Relaxation step for a dense M-by-N matrix
 
+[![Build Status](https://travis-ci.org/aki5/librelax.svg?branch=master)](https://travis-ci.org/aki5/librelax)
+
+
 ```
 double relax_step(double *A, int m, int n, int stride, double *b, double *x0, double *x1, double *res, double w);
 ```
