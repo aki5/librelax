@@ -38,10 +38,11 @@ main(int argc, char *argv[])
 			for(j = 0; j < n; j++){
 				if(i != j){
 					A[irow+j] = drand48();
-					sigma += A[irow+j];
+					sigma += fabs(A[irow+j]);
 				}
 			}
-			// ensure matrix is somewhat diagonally dominant
+			// ensure matrix is somewhat diagonally dominant, ie.
+			// magnitudes of other entries is less or equal to magnitude of the diagonal entry.
 			A[irow+i] = sigma + drand48();
 			irow += stride;
 		}
