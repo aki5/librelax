@@ -64,9 +64,9 @@ main(int argc, char *argv[])
 		for(i = 0; i < 100; i++){
 			double *tmp;
 			if(!jacobi)
-				maxres = relax_dense(A, m, n, stride, b, x0, x1, NULL, 0.9); // for gauss-seidel
+				maxres = relax_sor(A, m, n, stride, b, x0, x1, NULL, 0.9); // for gauss-seidel
 			else
-				maxres = relax_dense(A, m, n, stride, b, x0, x1, NULL, 0.6); // for jacobi
+				maxres = relax_sor(A, m, n, stride, b, x0, x1, NULL, 0.6); // for jacobi
 			tmp = x0;
 			x0 = x1;
 			x1 = tmp;

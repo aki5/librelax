@@ -2,17 +2,11 @@
 
 [![Build Status](https://travis-ci.org/aki5/librelax.svg?branch=master)](https://travis-ci.org/aki5/librelax)
 
+## Successive over-relaxation step
 
 ```
-double relax_dense(
+double relax_sor(
 	double *A, int m, int n, int stride,
-	double *b,
-	double *x0, double *x1, double *res,
-	double w
-);
-
-double relax_sparse(
-	double *A, int *m, int *n,  int len,
 	double *b,
 	double *x0, double *x1, double *res,
 	double w
@@ -32,3 +26,22 @@ Relaxation factor w of 1.0 results in classical jacobi (x0 != x1) or gauss-seide
 Res is used to store a residual vector (which is computed as a side effect).
 
 Return value is the maximum absolute value in the residual vector.
+
+## Least squares formulation 
+
+```
+void relax_ata(double *A, int m, int n, int astride, double *C, int cstride);
+void relax_atb(double *A, int m, int n, int astride, double *b, double *c);
+```
+
+When it turns out that we have too many equations (M > N), it is possible to reduce the number of rows to N by multiplying both, the matrix A and vector b by the transpose of A.
+
+Solving the resulting NxN system for x results in a least squares fit to the original overdetermined system.
+
+This outrageous claim follows fairly simply from taking a gradient of the squared length of residual of the system, and then noticing that a positive square function has its minimum value when all derivatives are zero.
+
+The solution could also be expressed in matrix form, x = A+ * b, where A+ == (At*A)^-1 * At is also known as Moore-Penrose pseudoinverse.
+
+relax_ata multiplies A by its own transpose and store the result in C, where A is MxN (has m rows and n columns) and C is NxN (has n rows and n columns)
+
+relax_atb multiplies b by transpose of A, store the result in c, where A is MxN (has m rows and n columns) and c is Nx1 (has n rows).

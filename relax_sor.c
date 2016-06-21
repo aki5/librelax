@@ -1,8 +1,9 @@
 #include <stddef.h>
 #include <math.h>
+#include "relax.h"
 
 double
-relax_dense(double *A, int m, int n, int stride, double *b, double *x0, double *x1, double *res, double w)
+relax_sor(double *A, int m, int n, int stride, double *b, double *x0, double *x1, double *res, double w)
 {
 	double sigma, rowres, maxres, diag;
 	int i, j, irow;

@@ -2,7 +2,9 @@
 CFLAGS=-O2 -fomit-frame-pointer
 
 LIBRELAX_OFILES=\
-	relax_dense.o\
+	relax_sor.o\
+	relax_ata.o\
+	relax_atb.o\
 
 test: relax_test
 	./relax_test
