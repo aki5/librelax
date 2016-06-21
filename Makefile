@@ -1,5 +1,5 @@
 
-CFLAGS=-O2 -fomit-frame-pointer
+CFLAGS=-O2 -fomit-frame-pointer -W -Wall
 
 LIBRELAX_OFILES=\
 	relax_sor.o\
