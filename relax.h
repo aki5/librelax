@@ -10,4 +10,4 @@
  *	w == 1.0: classic jacobi or gauss-seidel.
  *	0.0 < w < 2.0: relaxation factor, w < 1.0 is under-relaxed, w > 1.0 is over-relaxed.
  */
-double relax_step(double *A, int m, int n, int stride, double *b, double *x0, double *x1, double *res, double w);
+double relax_dense(double *A, int m, int n, int stride, double *b, double *x0, double *x1, double *res, double w);
