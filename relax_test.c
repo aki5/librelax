@@ -2,7 +2,9 @@
 #include <stdlib.h>
 #include <sys/time.h>
 #include <math.h>
+#include <string.h>
 #include <fenv.h>
+#include <float.h>
 #include "relax.h"
 
 int nloops = 10;
@@ -24,8 +26,6 @@ main(int argc, char *argv[])
 	gettimeofday(&tval, NULL);
 	srand48(tval.tv_sec ^ tval.tv_usec);
 
-	feclearexcept(FE_ALL_EXCEPT);
-	feenableexcept(FE_INVALID|FE_DIVBYZERO|FE_OVERFLOW);
 
 	m = 1000;
 	n = 1000;
@@ -63,10 +63,25 @@ main(int argc, char *argv[])
 
 		for(i = 0; i < 100; i++){
 			double *tmp;
+
+			feclearexcept(FE_ALL_EXCEPT);
 			if(!jacobi)
 				maxres = relax_sor(A, m, n, stride, b, x0, x1, NULL, 0.9); // for gauss-seidel
 			else
 				maxres = relax_sor(A, m, n, stride, b, x0, x1, NULL, 0.6); // for jacobi
+			if(fetestexcept(FE_ALL_EXCEPT & ~FE_INEXACT)){
+				fprintf(stderr, "iteration %d.%d: maxres %.20f\n", loop, i, maxres);
+				fprintf(stderr,
+					"floating point exception: %s%s%s%s%s\n",
+					fetestexcept(FE_DIVBYZERO) ? " FE_DIVBYZERO" : "",
+					fetestexcept(FE_INEXACT) ? " FE_INEXACT" : "",
+					fetestexcept(FE_INVALID) ? " FE_INVALID" : "",
+					fetestexcept(FE_OVERFLOW) ? " FE_OVERFLOW" : "",
+					fetestexcept(FE_UNDERFLOW) ? " FE_UNDERFLOW" : ""
+				);
+				exit(1);
+			}
+
 			tmp = x0;
 			x0 = x1;
 			x1 = tmp;

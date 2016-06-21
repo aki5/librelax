@@ -5,12 +5,12 @@
 double
 relax_sor(double *A, int m, int n, int stride, double *b, double *x0, double *x1, double *res, double w)
 {
-	double sigma, rowres, maxres, diag;
+	double sigma, rowres, maxres;
 	int i, j, irow;
 
 	maxres = 0.0;
 	irow = 0;
-	for(i = 0; i < n; i++){
+	for(i = 0; i < m; i++){
 
 		sigma = 0.0;
 		rowres = 0.0;
@@ -31,7 +31,7 @@ relax_sor(double *A, int m, int n, int stride, double *b, double *x0, double *x1
 		if(res != NULL)
 			res[i] = rowres;
 
-		irow = (i == m-1) ? 0 : (irow + stride);
+		irow = irow + stride;
 	}
 	return maxres;
 }
