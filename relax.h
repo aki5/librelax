@@ -13,6 +13,13 @@
 double relax_sor(double *A, int m, int n, int stride, double *b, double *x0, double *x1, double *res, double w);
 
 /*
+ *	relax_solve destructively soves the system Ax = b for x.
+ *	After returning, A contains a diagonal matrix and b contains
+ * 	the vector x.
+ */
+void relax_solve(double *A, int m, int n, int stride, double *b);
+
+/*
  *	When it turns out that we have too many equations (M > N), it is
  *	possible to reduce the number of rows to N by multiplying both,
  *	the matrix A and vector b by the transpose of A.
@@ -37,4 +44,6 @@ double relax_sor(double *A, int m, int n, int stride, double *b, double *x0, dou
  *	c is Nx1 (has n rows)
  */
 void relax_ata(double *A, int m, int n, int astride, double *C, int cstride);
+void relax_aat(double *A, int m, int n, int astride, double *C, int cstride);
 void relax_atb(double *A, int m, int n, int astride, double *b, double *c);
+void relax_ab(double *A, int m, int n, int astride, double *b, double *c);

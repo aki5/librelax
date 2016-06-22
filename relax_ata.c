@@ -1,6 +1,6 @@
 #include "relax.h"
 /*
- *	relax_ata multiplies A by its own transpose and store the result in C
+ *	relax_aat computes Aᵀ*A and stores the result in C
  *	A is MxN (has m rows and n columns)
  *	C is NxN (has n rows and n columns)
  */
@@ -17,7 +17,7 @@ relax_ata(double *A, int m, int n, int astride, double *C, int cstride)
 			sum = 0.0;
 			koff = 0;
 			for(k = 0; k < m; k++){
-				// notice that A[koff+i] really stands for At[ioff+k]
+				// ik*kj, Aᵀ[ioff+k] is A[koff+i]
 				sum += A[koff+i]*A[koff+j];
 				koff += astride;
 			}

@@ -1,8 +1,15 @@
-# Relaxation step for dense and sparse M-by-N matrices
+# A few simple routines for dense M-by-N matrices
 
 [![Build Status](https://travis-ci.org/aki5/librelax.svg?branch=master)](https://travis-ci.org/aki5/librelax)
 
 ## Successive over-relaxation step
+
+Relax_sor implements the successive over-relaxation step for a dense M-by-N matrix. It runs a single pass through the matrix, reading the previous solution (guess) from x0 and storing the new one in x1. A typical program will call this function in a loop, until the return value (maximum residual) falls beyond the required error threshold.
+
+The SOR (gauss-seidel) method converges if A is symmetric and positive (semi)definite, which is good news for least squares formulations, because
+
+* AᵀA and AAᵀ are symmetric, and
+* AᵀA and AAᵀ are positive semi-definite for any matrix A.
 
 ```
 double relax_sor(
@@ -15,9 +22,7 @@ double relax_sor(
 
 There are M rows and N columns in the M-by-N matrix A, and the vectors b, x0 and x1 are column vectors of N elements each. In the source code, i indicates the row (0 to m-1), and j indicates the column (0 to n-1).
 
-The dense version assumes the array A has the matrix elements stored in a dense fashion, rows of N columns each being offset by stride elements from each other. The  stride parameter can be used to pass in a part of a larger matrix without copying its contents.
-
-The sparse version has a densely packed array of len elements, and for each element there are explicit row and column numbers in the M and N arrays respectively, eg. element A[k] has row m[k] and column n[k].
+Elements of A need to be stored in a dense matrix format, with M rows of N columns. Rows are offset from each other by stride elements. The  stride parameter can be used to pass in a part of a larger matrix without copying its contents, but is often passed in as N.
 
 If x0 and x1  are the same pointer, the step is gauss-seidel type (in-place update), but if they are different, the step is jacobi type (read from x0, write to x1)
 
@@ -27,21 +32,40 @@ Res is used to store a residual vector (which is computed as a side effect).
 
 Return value is the maximum absolute value in the residual vector.
 
-## Least squares formulation 
+## Least Squares and Minimum Norm
+
+When there are too many equations `(M > N)`, it is possible to reduce the number of rows to N by multiplying both, the matrix A and vector b by Aᵀ from the left. Solving the resulting NxN system `Aᵀ*A*x = Aᵀ*b` for x results in a least squares fit to the original overdetermined system.
+
+When there are too few equations `(M < N)`, it is similarly possible to reach a solution by using Aᵀ. The MxM system `A*Aᵀ*w = b` can be solved for w from which the minimum norm fit is acquired by computing `x = Aᵀ*w`.
+
+The least squares claim follow fairly simply from taking a gradient of the squared norm of residual of the system, and then noticing that a positive square function has its minimum value when all derivatives are zero. The minimum norm solution minimizes the norm of the result instead of that of the residual, and can be derived using the same basic insights.
+
+The solution could also be expressed in matrix form, `x = A⁺ * b`, where `A⁺ = (Aᵀ * A)⁻¹ * Aᵀ` is known as the Moore-Penrose pseudoinverse.
 
 ```
-void relax_ata(double *A, int m, int n, int astride, double *C, int cstride);
-void relax_atb(double *A, int m, int n, int astride, double *b, double *c);
+void relax_aat(
+	double *A, int m, int n, int astride,
+	double *C, int cstride
+);
+
+void relax_ata(
+	double *A, int m, int n, int astride,
+	double *C, int cstride
+);
+
+void relax_atb(
+	double *A, int m, int n, int astride,
+	double *b, double *c
+);
+
+void relax_ab(
+	double *A, int m, int n, int astride,
+	double *b, double *c
+);
 ```
 
-When it turns out that we have too many equations (M > N), it is possible to reduce the number of rows to N by multiplying both, the matrix A and vector b by the transpose of A.
+relax_aat computes Aᵀ*A (transpose of A by A) and stores the result in C, where A is MxN (has m rows and n columns) and C is NxN (has n rows and n columns)
 
-Solving the resulting NxN system for x results in a least squares fit to the original overdetermined system.
+relax_ata multiplies A*Aᵀ (A by transpose of A) and stores the result in C, where A is MxN (has m rows and n columns) and C is NxN (has n rows and n columns)
 
-This outrageous claim follows fairly simply from taking a gradient of the squared length of residual of the system, and then noticing that a positive square function has its minimum value when all derivatives are zero.
-
-The solution could also be expressed in matrix form, x = A+ * b, where A+ == (At*A)^-1 * At is also known as Moore-Penrose pseudoinverse.
-
-relax_ata multiplies A by its own transpose and store the result in C, where A is MxN (has m rows and n columns) and C is NxN (has n rows and n columns)
-
-relax_atb multiplies b by transpose of A, store the result in c, where A is MxN (has m rows and n columns) and c is Nx1 (has n rows).
+relax_ab and relax_atb multiplies b by A (Aᵀ for relax_atb) and stores the result in c.
