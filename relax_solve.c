@@ -6,7 +6,7 @@
  *	run gauss-jordan elimination on the MxN matrix A,
  *	destroying it in the process.
  */
-void
+int
 relax_solve(double *A, int m, int n, int stride, double *b)
 {
 	double tmp, maxpiv;
@@ -15,13 +15,6 @@ relax_solve(double *A, int m, int n, int stride, double *b)
 
 	for(i = 0; i < m; i++)
 		row[i] = i;
-
-	for(i = 0; i < m; i++){
-		maxrow = lrand48() % m;
-		ioff = row[i];
-		row[i] = row[maxrow];
-		row[maxrow] = ioff;
-	}
 
 	for(i = 0; i < m; i++){
 		// find maximum value down the column
@@ -35,6 +28,9 @@ relax_solve(double *A, int m, int n, int stride, double *b)
 				maxrow = k;
 			}
 		}
+
+		if(fabs(maxpiv) < 1e-6)
+			return -1;
 
 		// swap max row and current row
 		ioff = row[i];
@@ -60,4 +56,6 @@ relax_solve(double *A, int m, int n, int stride, double *b)
 		b[row[i]] /= tmp;
 		A[row[i]*stride+i] /= tmp;
 	}
+
+	return 0;
 }

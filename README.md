@@ -33,11 +33,13 @@ Res is used to store a residual vector (which is computed as a side effect).
 Return value is the maximum absolute value in the residual vector.
 
 ```
-void relax_solve(double *A, int m, int n, int stride, double *b);
+int relax_solve(double *A, int m, int n, int stride, double *b);
 ```
 
 Relax_solve destructively soves the system Ax = b for x. After relax_solve returns, A contains a diagonal matrix of ones and b contains the vector x.
 The implementation is a simple gauss-jordan elimination, provided as a baseline for testing and other purposes.
+
+Return value is 0 on success, but if the matrix is found to be singular, relax_solve returns -1.
 
 ## Least Squares and Minimum Norm
 

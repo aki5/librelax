@@ -16,8 +16,10 @@ double relax_sor(double *A, int m, int n, int stride, double *b, double *x0, dou
  *	relax_solve destructively soves the system Ax = b for x.
  *	After returning, A contains a diagonal matrix and b contains
  * 	the vector x.
+ *
+ *	If the matrix is found to be singular, relax_solve returns -1.
  */
-void relax_solve(double *A, int m, int n, int stride, double *b);
+int relax_solve(double *A, int m, int n, int stride, double *b);
 
 /*
  *	When it turns out that we have too many equations (M > N), it is

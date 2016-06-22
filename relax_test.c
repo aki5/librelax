@@ -135,7 +135,7 @@ lsq_test(int input_n)
 	int i, m, n, stride;
 	int loop;
 
-	m = input_n + lrand48()%input_n;
+	m = input_n + 1 + lrand48()%input_n;
 	n = input_n;
 	fprintf(stderr, "lsq_test %dx%d\n", m, n);
 
@@ -177,7 +177,7 @@ lsq_test2(int input_n)
 	int i, m, n, stride;
 	int loop;
 
-	m = input_n + lrand48()%input_n;
+	m = input_n + 1 + lrand48()%input_n;
 	n = input_n;
 	fprintf(stderr, "lsq_test2 %dx%d\n", m, n);
 
@@ -198,7 +198,10 @@ lsq_test2(int input_n)
 		for(i = 0; i < n; i++)
 			x0[i] = c[i];
 		feclearexcept(FE_ALL_EXCEPT);
-		relax_solve(C, n, n, n, x0);
+		if(relax_solve(C, n, n, n, x0) == -1){
+			fprintf(stderr, "relax_solve: matrix is singular\n");
+			exit(1);
+		}
 		if(fetestexcept(FE_ALL_EXCEPT & ~FE_INEXACT)){
 			fprintf(stderr, "iteration %d:\n", loop);
 			fprintf(stderr,
@@ -237,7 +240,7 @@ minnorm_test(int input_n)
 	int loop;
 
 	m = input_n;
-	n = input_n + lrand48()%input_n;
+	n = input_n + 1 + lrand48()%input_n;
 	fprintf(stderr, "minnorm_test %dx%d\n", m, n);
 
 	stride = n;
@@ -285,7 +288,7 @@ minnorm_test2(int input_n)
 	int loop;
 
 	m = input_n;
-	n = input_n + lrand48()%input_n;
+	n = input_n + 1 + lrand48()%input_n;
 	fprintf(stderr, "minnorm_test2 %dx%d\n", m, n);
 
 	stride = n;
@@ -307,7 +310,10 @@ minnorm_test2(int input_n)
 		for(i = 0; i < m; i++)
 			x0[i] = b[i];
 		feclearexcept(FE_ALL_EXCEPT);
-		relax_solve(C, m, m, m, x0);
+		if(relax_solve(C, m, m, m, x0) == -1){
+			fprintf(stderr, "relax_solve: matrix is singular\n");
+			exit(1);
+		}
 		if(fetestexcept(FE_ALL_EXCEPT & ~FE_INEXACT)){
 			fprintf(stderr, "iteration %d:\n", loop);
 			fprintf(stderr,
