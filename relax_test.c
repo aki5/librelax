@@ -8,7 +8,6 @@
 #include "relax.h"
 
 int nloops = 10;
-int jacobi;
 
 void
 dump_system(double *A, int m, int n, int stride, double *b)
@@ -278,7 +277,7 @@ lsq_test2(int input_n)
 void
 minnorm_test(int input_n)
 {
-	double *A, *b, *x0, *x1;
+	double *A, *b, *x0;
 	double *C, *c;
 	double maxres;
 	int i, m, n, stride;
@@ -292,10 +291,6 @@ minnorm_test(int input_n)
 	A = malloc(m * stride * sizeof A[0]);
 	b = malloc(n * sizeof b[0]);
 	x0 = malloc(n * sizeof x0[0]);
-	if(jacobi)
-		x1 = malloc(n * sizeof x1[0]);
-	else
-		x1 = x0;
 
 	C = malloc(m * m * sizeof C[0]);
 	c = malloc(n * sizeof c[0]);
@@ -304,8 +299,8 @@ minnorm_test(int input_n)
 		build_system(A, m, n, stride, b, 1);
 		relax_aat(A, m, n, stride, C, m); // this is the slow step.
 		init_guess(x0, m);
-		iterate_sor(C, m, m, m, b, x0, x1, jacobi ? 0.6 : 1.0);
-		relax_atb(A, m, n, stride, x1, c);
+		iterate_sor(C, m, m, m, b, x0, x0, 1.0);
+		relax_atb(A, m, n, stride, x0, c);
 
 		relax_ab(A, m, n, stride, c, x0);
 		maxres = fabs(x0[0]-b[0]);
@@ -317,8 +312,6 @@ minnorm_test(int input_n)
 	free(A);
 	free(b);
 	free(x0);
-	if(jacobi)
-		free(x1);
 	free(C);
 	free(c);
 }
@@ -326,7 +319,7 @@ minnorm_test(int input_n)
 void
 minnorm_test2(int input_n)
 {
-	double *A, *b, *x0, *x1;
+	double *A, *b, *x0;
 	double *C, *c;
 	double maxres;
 	int i, m, n, stride;
@@ -340,10 +333,6 @@ minnorm_test2(int input_n)
 	A = malloc(m * stride * sizeof A[0]);
 	b = malloc(n * sizeof b[0]);
 	x0 = malloc(n * sizeof x0[0]);
-	if(jacobi)
-		x1 = malloc(n * sizeof x1[0]);
-	else
-		x1 = x0;
 
 	C = malloc(m * m * sizeof C[0]);
 	c = malloc(n * sizeof c[0]);
@@ -383,21 +372,14 @@ minnorm_test2(int input_n)
 	free(A);
 	free(b);
 	free(x0);
-	if(jacobi)
-		free(x1);
 	free(C);
 	free(c);
 }
 
-
-
 int
-main(int argc, char *argv[])
+main(void)
 {
 	struct timeval tval;
-
-	if(argc > 1 && !strcmp(argv[1], "jacobi"))
-		jacobi++;
 
 	gettimeofday(&tval, NULL);
 	srand48(tval.tv_sec ^ tval.tv_usec);
