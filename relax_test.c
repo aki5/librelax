@@ -84,7 +84,7 @@ iterate_sor(double *A, int m, int n, int stride, double *b, double *x0, double *
 		tmp = x0;
 		x0 = x1;
 		x1 = tmp;
-		if(maxres < 1e-6)
+		if(maxres < 1e-14)
 			break;
 	}
 //	printf("%d: maxres %.20f\n", i, maxres);
@@ -100,7 +100,7 @@ square_test(int input_n)
 
 	m = input_n;
 	n = input_n;
-	fprintf(stderr, "square_test %dx%d\n", m, n);
+	fprintf(stderr, "square_test sor %dx%d\n", m, n);
 
 	stride = n;
 	A = malloc(m * stride * sizeof A[0]);
@@ -127,6 +127,51 @@ square_test(int input_n)
 }
 
 void
+square_test2(int input_n)
+{
+	double *A, *C, *b, *x0, *x1;
+	double maxres;
+	int i, m, n, stride;
+	int loop;
+
+	m = input_n;
+	n = input_n;
+	fprintf(stderr, "square_test direct %dx%d\n", m, n);
+
+	stride = n;
+	A = malloc(m * stride * sizeof A[0]);
+	C = malloc(m * stride * sizeof A[0]);
+
+	b = malloc(m * sizeof b[0]);
+	x0 = malloc(m * sizeof x0[0]);
+	x1 = malloc(m * sizeof x1[0]);
+
+	for(loop = 0; loop < nloops; loop++){
+		build_system(A, m, n, stride, b, 1);
+
+		memcpy(x0, b, m * sizeof b[0]);
+		memcpy(C, A, m * stride * sizeof A[0]);
+		feclearexcept(FE_ALL_EXCEPT);
+		if(relax_solve(C, m, n, stride, x0) == -1){
+			fprintf(stderr, "relax_solve: matrix is singular\n");
+			exit(1);
+		}
+
+		relax_ab(A, m, n, stride, x0, x1);
+		maxres = fabs(x1[0]-b[0]);
+		for(i = 0; i < m; i++)
+			maxres = fabs(maxres) > fabs(x1[i]-b[i]) ? fabs(maxres) : fabs(x1[i]-b[i]);
+		printf("maxres %.20f\n", maxres);
+	}
+
+	free(A);
+	free(C);
+	free(b);
+	free(x0);
+	free(x1);
+}
+
+void
 lsq_test(int input_n)
 {
 	double *A, *b, *x0;
@@ -137,7 +182,7 @@ lsq_test(int input_n)
 
 	m = input_n + 1 + lrand48()%input_n;
 	n = input_n;
-	fprintf(stderr, "lsq_test %dx%d\n", m, n);
+	fprintf(stderr, "lsq_test sor %dx%d\n", m, n);
 
 	stride = n;
 	A = malloc(m * stride * sizeof A[0]);
@@ -148,7 +193,7 @@ lsq_test(int input_n)
 	c = malloc(m * sizeof c[0]);
 
 	for(loop = 0; loop < nloops; loop++){
-		build_system(A, m, n, stride, b, 0);
+		build_system(A, m, n, stride, b, 1);
 		relax_ata(A, m, n, stride, C, n); // this is the slow step.
 		relax_atb(A, m, n, stride, b, c);
 		init_guess(x0, n);
@@ -179,7 +224,7 @@ lsq_test2(int input_n)
 
 	m = input_n + 1 + lrand48()%input_n;
 	n = input_n;
-	fprintf(stderr, "lsq_test2 %dx%d\n", m, n);
+	fprintf(stderr, "lsq_test direct %dx%d\n", m, n);
 
 	stride = n;
 	A = malloc(m * stride * sizeof A[0]);
@@ -190,7 +235,7 @@ lsq_test2(int input_n)
 	c = malloc(m * sizeof c[0]);
 
 	for(loop = 0; loop < nloops; loop++){
-		build_system(A, m, n, stride, b, 0);
+		build_system(A, m, n, stride, b, 1);
 		relax_ata(A, m, n, stride, C, n); // this is the slow step.
 		relax_atb(A, m, n, stride, b, c);
 
@@ -241,7 +286,7 @@ minnorm_test(int input_n)
 
 	m = input_n;
 	n = input_n + 1 + lrand48()%input_n;
-	fprintf(stderr, "minnorm_test %dx%d\n", m, n);
+	fprintf(stderr, "minnorm_test sor %dx%d\n", m, n);
 
 	stride = n;
 	A = malloc(m * stride * sizeof A[0]);
@@ -256,7 +301,7 @@ minnorm_test(int input_n)
 	c = malloc(n * sizeof c[0]);
 
 	for(loop = 0; loop < nloops; loop++){
-		build_system(A, m, n, stride, b, 0);
+		build_system(A, m, n, stride, b, 1);
 		relax_aat(A, m, n, stride, C, m); // this is the slow step.
 		init_guess(x0, m);
 		iterate_sor(C, m, m, m, b, x0, x1, jacobi ? 0.6 : 1.0);
@@ -289,7 +334,7 @@ minnorm_test2(int input_n)
 
 	m = input_n;
 	n = input_n + 1 + lrand48()%input_n;
-	fprintf(stderr, "minnorm_test2 %dx%d\n", m, n);
+	fprintf(stderr, "minnorm_test direct %dx%d\n", m, n);
 
 	stride = n;
 	A = malloc(m * stride * sizeof A[0]);
@@ -304,7 +349,7 @@ minnorm_test2(int input_n)
 	c = malloc(n * sizeof c[0]);
 
 	for(loop = 0; loop < nloops; loop++){
-		build_system(A, m, n, stride, b, 0);
+		build_system(A, m, n, stride, b, 1);
 		relax_aat(A, m, n, stride, C, m); // this is the slow step.
 
 		for(i = 0; i < m; i++)
@@ -358,10 +403,14 @@ main(int argc, char *argv[])
 	srand48(tval.tv_sec ^ tval.tv_usec);
 
 	square_test(500);
+	square_test2(500);
+	printf("\n");
 	lsq_test(300);
 	lsq_test2(300);
+	printf("\n");
 	minnorm_test(300);
 	minnorm_test2(300);
+	printf("\n");
 
 	return 0;
 }
