@@ -32,16 +32,18 @@ Res is used to store a residual vector (which is computed as a side effect).
 
 Return value is the maximum absolute value in the residual vector.
 
-```
-int relax_solve(double *A, int m, int n, int stride, double *b);
-```
+## Direct method solver
 
 Relax_solve destructively soves the system Ax = b for x. After relax_solve returns, A contains a diagonal matrix of ones and b contains the vector x.
 The implementation is a simple gauss-jordan elimination, provided as a baseline for testing and other purposes.
 
+```
+int relax_solve(double *A, int m, int n, int stride, double *b);
+```
+
 Return value is 0 on success, but if the matrix is found to be singular, relax_solve returns -1.
 
-## Least Squares and Minimum Norm
+## Least Squares and Minimum Norm utilities
 
 When there are too many equations `(M > N)`, it is possible to reduce the number of rows to N by multiplying both, the matrix A and vector b by Aᵀ from the left. Solving the resulting NxN system `Aᵀ*A*x = Aᵀ*b` for x results in a least squares fit to the original overdetermined system.
 
