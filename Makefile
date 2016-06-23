@@ -8,6 +8,7 @@ LIBRELAX_OFILES=\
 	relax_atb.o\
 	relax_ab.o\
 	relax_solve.o\
+	relax_svd.o\
 
 test: relax_test
 	./relax_test

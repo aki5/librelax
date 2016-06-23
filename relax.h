@@ -21,6 +21,24 @@ double relax_sor(double *A, int m, int n, int stride, double *b, double *x0, dou
  */
 int relax_solve(double *A, int m, int n, int stride, double *b);
 
+
+/*
+ *	relax_svd computes the singular value decomposition UΣV of a matrix,
+ *	parameters behave as follows
+ *
+ *	- U is the input matrix, and the left orthogonal transformation matrix U
+ *	- m is the number of rows
+ *	- n is the number of columns
+ *	- ustride the row offset for matrix u (often n)
+ *	- V is the right orthogonal transformation matrix
+ *	- vstride is the row offset for matrix v (often n)
+ *	- w is the n-vector of singular values (diagonal of Σ)
+ *	- tmpvec is an n-vector used for temporary storage by the algorithm
+ *
+ *	returns 0 on success, -1 if the algorithm didn't converge after 30 iterations.
+ */
+int relax_svd(double *U, int m, int n, int ustride, double *V, int vstride, double *w, double *tmpvec);
+
 /*
  *	When it turns out that we have too many equations (M > N), it is
  *	possible to reduce the number of rows to N by multiplying both,
