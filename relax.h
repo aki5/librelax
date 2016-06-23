@@ -21,7 +21,6 @@ double relax_sor(double *A, int m, int n, int stride, double *b, double *x0, dou
  */
 int relax_solve(double *A, int m, int n, int stride, double *b);
 
-
 /*
  *	relax_svd computes the singular value decomposition UΣV of a matrix,
  *	parameters behave as follows
@@ -35,9 +34,29 @@ int relax_solve(double *A, int m, int n, int stride, double *b);
  *	- w is the n-vector of singular values (diagonal of Σ)
  *	- tmpvec is an n-vector used for temporary storage by the algorithm
  *
+ *	For an under-determined system (m < n), you should call relax_svd on Aᵀ
+ *	to obtain Aᵀ = UΣVᵀ instead, which can be transposed back into A = VΣUᵀ,
+ *	Σ being its own transpose.
+ *
  *	returns 0 on success, -1 if the algorithm didn't converge after 30 iterations.
  */
 int relax_svd(double *U, int m, int n, int ustride, double *V, int vstride, double *w, double *tmpvec);
+
+/*
+ *	relax_pinv computes the Moore-Penrose pseudoinverse from a
+ *	singular value decomposition, knowing that if A = UΣV, then
+ *	A⁺ = VᵀΣ⁻¹U is its pseudoinverse.
+ *
+ *	The routine intentionally doesn't call the SVD itself, because the
+ *	user typically needs to manipulate the singular values to his liking.
+ *	This kind of use is best supported by having the user call relax_svd
+ *	himself, do the necessary manipulations (such as eliminating values
+ *	very close to zero) and call relax_pinv.
+ *
+ *	U is MxN (has m rows and n columns)
+ *	C is NxM (has n rows and m columns)
+ */
+void relax_pinv(double *U, int m, int n, int ustride, double *V, int vstride, double *w, double *C, int cstride);
 
 /*
  *	When it turns out that we have too many equations (M > N), it is
@@ -59,11 +78,16 @@ int relax_svd(double *U, int m, int n, int ustride, double *V, int vstride, doub
  *	A is MxN (has m rows and n columns)
  *	C is NxN (has n rows and n columns)
  *
- *	relax_atb multiplies b by transpose of A, store the result in c
+ *	relax_ab and relax_atb multiply b by A (transpose of A) and store the result in c
  *	A is MxN (has m rows and n columns)
  *	c is Nx1 (has n rows)
+ *
+ *	relax_at stores the transpose of A into C
+ *	A is MxN (has m rows and n columns)
+ *	C is NxM (has n rows and m columns)
  */
 void relax_ata(double *A, int m, int n, int astride, double *C, int cstride);
 void relax_aat(double *A, int m, int n, int astride, double *C, int cstride);
 void relax_atb(double *A, int m, int n, int astride, double *b, double *c);
+void relax_at(double *A, int m, int n, int astride, double *C, int cstride);
 void relax_ab(double *A, int m, int n, int astride, double *b, double *c);

@@ -37,6 +37,12 @@ relax_svd(double *U, int m, int n, int ustride, double *V, int vstride, double *
 	int flag, i, its, j, o, k, l, nm;
 	double anorm, c, f, g, h, s, scale, x, y, z;
 
+	if(m < n){
+		// You should call SVD on Aᵀ to obtain Aᵀ = UWVᵀ instead,
+		// which can be transposed into A = VWUᵀ
+		return -1;
+	}
+
 	/* Householder reduction to bidiagonal form */
 	g = scale = anorm = 0.0;
 	for(i = 0; i < n; i++){
@@ -120,7 +126,7 @@ relax_svd(double *U, int m, int n, int ustride, double *V, int vstride, double *
 	}
 
 	/* accumulate the left-hand transformation */
-	for(i = m < n ? m-1 : n-1; i >= 0; i--){
+	for(i = n-1; i >= 0; i--){
 		l = i + 1;
 		g = w[i];
 		for(j = l; j < n; j++)
