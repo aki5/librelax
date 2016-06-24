@@ -96,3 +96,9 @@ void relax_aat(double *A, int m, int n, int astride, double *C, int cstride);
 void relax_atb(double *A, int m, int n, int astride, double *b, double *c);
 void relax_at(double *A, int m, int n, int astride, double *C, int cstride);
 void relax_ab(double *A, int m, int n, int astride, double *b, double *c);
+
+/*
+ *	Relax_maxres computes the residual vector b-x for a system Ax = b
+ *	and returns the maximum absolute value in that vector.
+ */
+double relax_maxres(double *A, int m, int n, int stride, double *b, double *x, double *res);
