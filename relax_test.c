@@ -67,7 +67,8 @@ iterative_gs(double *A, int m, int n, int stride, double *b, double *x0)
 		maxres = relax_sor(A, m, n, stride, b, x0, x0, NULL, 1.0); // for gauss-seidel
 		if(fetestexcept(FE_ALL_EXCEPT & ~FE_INEXACT)){
 			fprintf(stderr,
-				"iterative_gs: floating point exception:%s%s%s%s%s\n",
+				"%-25s floating point exception:%s%s%s%s%s\n",
+				"gauss-seidel",
 				fetestexcept(FE_DIVBYZERO) ? " FE_DIVBYZERO" : "",
 				fetestexcept(FE_INEXACT) ? " FE_INEXACT" : "",
 				fetestexcept(FE_INVALID) ? " FE_INVALID" : "",
@@ -79,7 +80,6 @@ iterative_gs(double *A, int m, int n, int stride, double *b, double *x0)
 		if(maxres < 1e-14)
 			break;
 	}
-//	printf("%d: maxres %.20f\n", i, maxres);
 	return 0;
 }
 
@@ -103,14 +103,49 @@ err_out:
 	return err;
 }
 
+int
+direct_svd(double *A, int m, int n, int stride, double *b, double *x0)
+{
+	double *U, *V, *w, *tmpvec;
+	int ustride, vstride;
+	int err;
+
+	if(m == n){
+		ustride = m;
+		vstride = n;
+		U = malloc(m * ustride * sizeof U[0]);
+		V = malloc(n * vstride * sizeof V[0]);
+		w = malloc(n * sizeof w[0]);
+		tmpvec = malloc(n * sizeof tmpvec[0]);
+
+		memcpy(U, A, m * ustride * sizeof U[0]);
+		err = relax_svd(U, m, n, ustride, V, vstride, w, tmpvec);
+		relax_pinvb(U, m, n, ustride, V, vstride, w, b, x0, tmpvec);
+
+		free(U);
+		free(V);
+		free(w);
+		free(tmpvec);
+
+	} else if(m > n){
+		err = -1;
+	} else {
+		err = -1;
+	}
+
+	return err;
+}
+
 int (*solvers[])(double *A, int m, int n, int stride, double *b, double *x0) = {
 	iterative_gs,
 	direct_gauss,
+	direct_svd,
 };
 
 char *solver_names[] = {
-	"iterative_gs",
+	"gauss-seidel",
 	"direct_gauss",
+	"direct_svd",
 };
 
 int
@@ -139,7 +174,7 @@ square_test(int input_n)
 			if((err = (*solvers[si])(A, m, n, stride, b, x0)) == -1)
 				continue;
 			maxres = relax_maxres(A, m, n, stride, b, x0, x1);
-			printf("%s: maxres %.20f\n", solver_names[si], maxres);
+			printf("%-25s maxres %.20f\n", solver_names[si], maxres);
 		}
 	}
 
@@ -183,7 +218,7 @@ lsq_test(int input_n)
 			if((err = (*solvers[si])(C, n, n, n, c, x0)) == -1)
 				continue;
 			maxres = relax_maxres(A, m, n, stride, b, x0, c);
-			printf("%s: maxres %.20f\n", solver_names[si], maxres);
+			printf("%-25s maxres %.20f\n", solver_names[si], maxres);
 		}
 	}
 
@@ -228,7 +263,7 @@ minnorm_test(int input_n)
 			relax_atb(A, m, n, stride, x0, c);
 
 			maxres = relax_maxres(A, m, n, stride, b, c, x0);
-			printf("%s: maxres %.20f\n", solver_names[si], maxres);
+			printf("%-25s maxres %.20f\n", solver_names[si], maxres);
 		}
 	}
 
@@ -237,84 +272,6 @@ minnorm_test(int input_n)
 	free(x0);
 	free(C);
 	free(c);
-	return err;
-}
-
-int
-svd_test(int m, int n, int debug)
-{
-	double *rnd;
-	double *u;
-	double *v;
-	double *w;
-	double *tmpvec;
-	int i, j, stride;
-	int loop;
-	int err;
-
-	fprintf(stderr, "svd_test direct %dx%d\n", m, n);
-
-	err = 0;
-	stride = n;
-	rnd = malloc(m * stride * sizeof rnd[0]);
-	u = malloc(m * stride * sizeof u[0]);
-	v = malloc(n * stride * sizeof v[0]);
-	w = malloc(n * sizeof w[0]);
-	tmpvec = malloc(n * sizeof tmpvec[0]);
-
-	for(loop = 0; loop < nloops; loop++){
-		for(i = 0; i < m*stride; i++){
-			rnd[i] = drand48()*drand48()*drand48()*drand48();
-			if(drand48() < 0.5)
-				rnd[i] = 0.0;
-			if(drand48() < 0.5)
-				rnd[i] = -rnd[i];
-		}
-
-		memcpy(u, rnd, m * stride * sizeof rnd[0]);
-		err = relax_svd(u, m, n, n, v, n, w, tmpvec);
-		if(err == -1){
-			fprintf(stderr, "relax_svd did not converge\n");
-			goto err_out;
-		}
-
-		if(debug != 0){
-			for(j = 0; j < m; j++){
-				double *row = u + j*stride;
-				printf("u%02d:", j);
-				for(i = 0; i < n; i++)
-					printf(" %+6.3f", row[i]);
-				printf("\n");
-			}
-
-			printf("\n");
-
-			for(j = 0; j < n; j++){
-				double *row = v + j*stride;
-				printf("v%02d:", j);
-				for(i = 0; i < n; i++)
-					printf(" %+6.3f", row[i]);
-				printf("\n");
-			}
-
-			printf("\n");
-
-			printf("w00:");
-			for(i = 0; i < n; i++){
-				printf(" %+9.6f", w[i]);
-			}
-			printf("\n");
-		}
-
-		printf("svd loop %d\n", loop);
-	}
-
-err_out:
-	free(rnd);
-	free(u);
-	free(v);
-	free(w);
-	free(tmpvec);
 	return err;
 }
 
@@ -332,10 +289,6 @@ main(void)
 	printf("\n");
 	minnorm_test(300);
 	printf("\n");
-
-	svd_test(300 + lrand48()%300, 300, 0);
-//	svd_test(20, 20, 1);
-
 
 	return 0;
 }

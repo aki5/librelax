@@ -47,7 +47,7 @@ int relax_gauss(double *A, int m, int n, int stride, double *b);
 int relax_svd(double *U, int m, int n, int ustride, double *V, int vstride, double *w, double *tmpvec);
 
 /*
- *	relax_pinv computes the Moore-Penrose pseudoinverse from a
+ *	relax_pinvb relax_pinvtb computes the Moore-Penrose pseudoinverse from a
  *	singular value decomposition, knowing that if A = UΣV, then
  *	A⁺ = VᵀΣ⁻¹U is its pseudoinverse.
  *
@@ -60,7 +60,8 @@ int relax_svd(double *U, int m, int n, int ustride, double *V, int vstride, doub
  *	U is MxN (has m rows and n columns)
  *	C is NxM (has n rows and m columns)
  */
-void relax_pinv(double *U, int m, int n, int ustride, double *V, int vstride, double *w, double *C, int cstride);
+void relax_pinvb(double *U, int m, int n, int ustride, double *V, int vstride, double *w, double *b, double *x, double *tmp);
+void relax_pinvtb(double *U, int m, int n, int ustride, double *V, int vstride, double *w, double *b, double *x, double *tmp);
 
 /*
  *	When it turns out that we have too many equations (M > N), it is
