@@ -7,6 +7,7 @@
 #include <float.h>
 #include "relax.h"
 
+int diagdom;
 int nloops = 10;
 
 void
@@ -24,7 +25,7 @@ dump_system(double *A, int m, int n, int stride, double *b)
 }
 
 void
-build_system(double *A, int m, int n, int stride, double *b, int diagdom)
+build_system(double *A, int m, int n, int stride, double *b)
 {
 	double sigma;
 
@@ -57,7 +58,7 @@ init_guess(double *x0, int m)
 		x0[i] = 0.0;
 }
 
-void
+int
 iterate_sor(double *A, int m, int n, int stride, double *b, double *x0, double *x1, double w)
 {
 	double maxres;
@@ -78,7 +79,7 @@ iterate_sor(double *A, int m, int n, int stride, double *b, double *x0, double *
 				fetestexcept(FE_OVERFLOW) ? " FE_OVERFLOW" : "",
 				fetestexcept(FE_UNDERFLOW) ? " FE_UNDERFLOW" : ""
 			);
-			exit(1);
+			return -1;
 		}
 		tmp = x0;
 		x0 = x1;
@@ -87,16 +88,19 @@ iterate_sor(double *A, int m, int n, int stride, double *b, double *x0, double *
 			break;
 	}
 //	printf("%d: maxres %.20f\n", i, maxres);
+	return 0;
 }
 
-void
+int
 square_test(int input_n)
 {
 	double *A, *b, *x0, *x1;
 	double maxres;
 	int i, m, n, stride;
 	int loop;
+	int err;
 
+	err = 0;
 	m = input_n;
 	n = input_n;
 	fprintf(stderr, "square_test sor %dx%d\n", m, n);
@@ -108,9 +112,11 @@ square_test(int input_n)
 	x1 = malloc(n * sizeof x1[0]);
 
 	for(loop = 0; loop < nloops; loop++){
-		build_system(A, m, n, stride, b, 1);
+		build_system(A, m, n, stride, b);
 		init_guess(x0, n);
-		iterate_sor(A, m, n, stride, b, x0, x0, 1.0);
+
+		if((err = iterate_sor(A, m, n, stride, b, x0, x0, 1.0)) == -1)
+			goto err_out;
 
 		relax_ab(A, m, n, stride, x0, x1);
 		maxres = fabs(x1[0]-b[0]);
@@ -119,20 +125,24 @@ square_test(int input_n)
 		printf("maxres %.20f\n", maxres);
 	}
 
+err_out:
 	free(A);
 	free(b);
 	free(x0);
 	free(x1);
+	return err;
 }
 
-void
+int
 square_test2(int input_n)
 {
 	double *A, *C, *b, *x0, *x1;
 	double maxres;
 	int i, m, n, stride;
 	int loop;
+	int err;
 
+	err = 0;
 	m = input_n;
 	n = input_n;
 	fprintf(stderr, "square_test direct %dx%d\n", m, n);
@@ -146,14 +156,14 @@ square_test2(int input_n)
 	x1 = malloc(m * sizeof x1[0]);
 
 	for(loop = 0; loop < nloops; loop++){
-		build_system(A, m, n, stride, b, 1);
+		build_system(A, m, n, stride, b);
 
 		memcpy(x0, b, m * sizeof b[0]);
 		memcpy(C, A, m * stride * sizeof A[0]);
 		feclearexcept(FE_ALL_EXCEPT);
-		if(relax_gauss(C, m, n, stride, x0) == -1){
+		if((err = relax_gauss(C, m, n, stride, x0)) == -1){
 			fprintf(stderr, "relax_gauss: matrix is singular\n");
-			exit(1);
+			goto err_out;
 		}
 
 		relax_ab(A, m, n, stride, x0, x1);
@@ -163,14 +173,16 @@ square_test2(int input_n)
 		printf("maxres %.20f\n", maxres);
 	}
 
+err_out:
 	free(A);
 	free(C);
 	free(b);
 	free(x0);
 	free(x1);
+	return err;
 }
 
-void
+int
 lsq_test(int input_n)
 {
 	double *A, *b, *x0;
@@ -178,6 +190,9 @@ lsq_test(int input_n)
 	double maxres;
 	int i, m, n, stride;
 	int loop;
+	int err;
+
+	err = 0;
 
 	m = input_n + 1 + lrand48()%input_n;
 	n = input_n;
@@ -192,11 +207,12 @@ lsq_test(int input_n)
 	c = malloc(m * sizeof c[0]);
 
 	for(loop = 0; loop < nloops; loop++){
-		build_system(A, m, n, stride, b, 1);
+		build_system(A, m, n, stride, b);
 		relax_ata(A, m, n, stride, C, n); // this is the slow step.
 		relax_atb(A, m, n, stride, b, c);
 		init_guess(x0, n);
-		iterate_sor(C, n, n, n, c, x0, x0, 1.0);
+		if((err = iterate_sor(C, n, n, n, c, x0, x0, 1.0)) == -1)
+			goto err_out;
 
 		relax_ab(A, m, n, stride, x0, c);
 		maxres = fabs(c[0]-b[0]);
@@ -205,14 +221,16 @@ lsq_test(int input_n)
 		printf("maxres %.20f\n", maxres);
 	}
 
+err_out:
 	free(A);
 	free(b);
 	free(x0);
 	free(C);
 	free(c);
+	return err;
 }
 
-void
+int
 lsq_test2(int input_n)
 {
 	double *A, *b, *x0;
@@ -220,7 +238,9 @@ lsq_test2(int input_n)
 	double maxres;
 	int i, m, n, stride;
 	int loop;
+	int err;
 
+	err = 0;
 	m = input_n + 1 + lrand48()%input_n;
 	n = input_n;
 	fprintf(stderr, "lsq_test direct %dx%d\n", m, n);
@@ -234,7 +254,7 @@ lsq_test2(int input_n)
 	c = malloc(m * sizeof c[0]);
 
 	for(loop = 0; loop < nloops; loop++){
-		build_system(A, m, n, stride, b, 1);
+		build_system(A, m, n, stride, b);
 		relax_ata(A, m, n, stride, C, n); // this is the slow step.
 		relax_atb(A, m, n, stride, b, c);
 
@@ -242,9 +262,9 @@ lsq_test2(int input_n)
 		for(i = 0; i < n; i++)
 			x0[i] = c[i];
 		feclearexcept(FE_ALL_EXCEPT);
-		if(relax_gauss(C, n, n, n, x0) == -1){
+		if((err = relax_gauss(C, n, n, n, x0)) == -1){
 			fprintf(stderr, "relax_gauss: matrix is singular\n");
-			exit(1);
+			goto err_out;
 		}
 		if(fetestexcept(FE_ALL_EXCEPT & ~FE_INEXACT)){
 			fprintf(stderr, "iteration %d:\n", loop);
@@ -256,7 +276,8 @@ lsq_test2(int input_n)
 				fetestexcept(FE_OVERFLOW) ? " FE_OVERFLOW" : "",
 				fetestexcept(FE_UNDERFLOW) ? " FE_UNDERFLOW" : ""
 			);
-			exit(1);
+			err = -1;
+			goto err_out;
 		}
 
 		relax_ab(A, m, n, stride, x0, c);
@@ -266,15 +287,17 @@ lsq_test2(int input_n)
 		printf("maxres %.20f\n", maxres);
 	}
 
+err_out:
 	free(A);
 	free(b);
 	free(x0);
 	free(C);
 	free(c);
+	return err;
 }
 
 
-void
+int
 minnorm_test(int input_n)
 {
 	double *A, *b, *x0;
@@ -282,7 +305,9 @@ minnorm_test(int input_n)
 	double maxres;
 	int i, m, n, stride;
 	int loop;
+	int err;
 
+	err = 0;
 	m = input_n;
 	n = input_n + 1 + lrand48()%input_n;
 	fprintf(stderr, "minnorm_test sor %dx%d\n", m, n);
@@ -296,10 +321,11 @@ minnorm_test(int input_n)
 	c = malloc(n * sizeof c[0]);
 
 	for(loop = 0; loop < nloops; loop++){
-		build_system(A, m, n, stride, b, 1);
+		build_system(A, m, n, stride, b);
 		relax_aat(A, m, n, stride, C, m); // this is the slow step.
 		init_guess(x0, m);
-		iterate_sor(C, m, m, m, b, x0, x0, 1.0);
+		if((err = iterate_sor(C, m, m, m, b, x0, x0, 1.0)) == -1)
+			goto err_out;
 		relax_atb(A, m, n, stride, x0, c);
 
 		relax_ab(A, m, n, stride, c, x0);
@@ -309,14 +335,16 @@ minnorm_test(int input_n)
 		printf("maxres %.20f\n", maxres);
 	}
 
+err_out:
 	free(A);
 	free(b);
 	free(x0);
 	free(C);
 	free(c);
+	return err;
 }
 
-void
+int
 minnorm_test2(int input_n)
 {
 	double *A, *b, *x0;
@@ -324,7 +352,9 @@ minnorm_test2(int input_n)
 	double maxres;
 	int i, m, n, stride;
 	int loop;
+	int err;
 
+	err = 0;
 	m = input_n;
 	n = input_n + 1 + lrand48()%input_n;
 	fprintf(stderr, "minnorm_test direct %dx%d\n", m, n);
@@ -338,17 +368,17 @@ minnorm_test2(int input_n)
 	c = malloc(n * sizeof c[0]);
 
 	for(loop = 0; loop < nloops; loop++){
-		build_system(A, m, n, stride, b, 1);
+		build_system(A, m, n, stride, b);
 		relax_aat(A, m, n, stride, C, m); // this is the slow step.
 
 		for(i = 0; i < m; i++)
 			x0[i] = b[i];
 		feclearexcept(FE_ALL_EXCEPT);
-		if(relax_gauss(C, m, m, m, x0) == -1){
+		if((err = relax_gauss(C, m, m, m, x0)) == -1){
 			fprintf(stderr, "relax_gauss: matrix is singular\n");
-			exit(1);
+			goto err_out;
 		}
-		if(fetestexcept(FE_ALL_EXCEPT & ~FE_INEXACT)){
+		if((err = fetestexcept(FE_ALL_EXCEPT & ~FE_INEXACT)) != 0){
 			fprintf(stderr, "iteration %d:\n", loop);
 			fprintf(stderr,
 				"floating point exception: %s%s%s%s%s\n",
@@ -358,7 +388,8 @@ minnorm_test2(int input_n)
 				fetestexcept(FE_OVERFLOW) ? " FE_OVERFLOW" : "",
 				fetestexcept(FE_UNDERFLOW) ? " FE_UNDERFLOW" : ""
 			);
-			exit(1);
+			err = -1;
+			goto err_out;
 		}
 		relax_atb(A, m, n, stride, x0, c);
 
@@ -368,15 +399,16 @@ minnorm_test2(int input_n)
 			maxres = fabs(maxres) > fabs(x0[i]-b[i]) ? fabs(maxres) : fabs(x0[i]-b[i]);
 		printf("maxres %.20f\n", maxres);
 	}
-
+err_out:
 	free(A);
 	free(b);
 	free(x0);
 	free(C);
 	free(c);
+	return err;
 }
 
-void
+int
 svd_test(int m, int n, int debug)
 {
 	double *rnd;
@@ -384,11 +416,13 @@ svd_test(int m, int n, int debug)
 	double *v;
 	double *w;
 	double *tmpvec;
-	int i, j, r, stride;
+	int i, j, stride;
 	int loop;
+	int err;
 
 	fprintf(stderr, "svd_test direct %dx%d\n", m, n);
 
+	err = 0;
 	stride = n;
 	rnd = malloc(m * stride * sizeof rnd[0]);
 	u = malloc(m * stride * sizeof u[0]);
@@ -406,10 +440,10 @@ svd_test(int m, int n, int debug)
 		}
 
 		memcpy(u, rnd, m * stride * sizeof rnd[0]);
-		r = relax_svd(u, m, n, n, v, n, w, tmpvec);
-		if(r == -1){
+		err = relax_svd(u, m, n, n, v, n, w, tmpvec);
+		if(err == -1){
 			fprintf(stderr, "relax_svd did not converge\n");
-			exit(1);
+			goto err_out;
 		}
 
 		if(debug != 0){
@@ -443,11 +477,13 @@ svd_test(int m, int n, int debug)
 		printf("svd loop %d\n", loop);
 	}
 
+err_out:
 	free(rnd);
 	free(u);
 	free(v);
 	free(w);
 	free(tmpvec);
+	return err;
 }
 
 int
