@@ -13,16 +13,20 @@
 double relax_sor(double *A, int m, int n, int stride, double *b, double *x0, double *x1, double *res, double w);
 
 /*
- *	relax_solve destructively soves the system Ax = b for x.
+ *	relax_solve and relax_gauss destructively solves the system
+ *	Ax = b for x.
+ *
  *	After returning, A contains a diagonal matrix and b contains
  * 	the vector x.
  *
- *	If the matrix is found to be singular, relax_solve returns -1.
+ *	If the matrix is found to be (too close to) singular, relax_solve
+ *	and relax_gauss return -1.
  */
 int relax_solve(double *A, int m, int n, int stride, double *b);
+int relax_gauss(double *A, int m, int n, int stride, double *b);
 
 /*
- *	relax_svd computes the singular value decomposition UΣV of a matrix,
+ *	relax_svd computes the singular value decomposition UΣV (not UΣVᵀ) of a matrix
  *	parameters behave as follows
  *
  *	- U is the input matrix, and the left orthogonal transformation matrix U
@@ -80,7 +84,8 @@ void relax_pinv(double *U, int m, int n, int ustride, double *V, int vstride, do
  *
  *	relax_ab and relax_atb multiply b by A (transpose of A) and store the result in c
  *	A is MxN (has m rows and n columns)
- *	c is Nx1 (has n rows)
+ *	b is Nx1 (has m rows)
+ *	c is 1xM (has n columns)
  *
  *	relax_at stores the transpose of A into C
  *	A is MxN (has m rows and n columns)

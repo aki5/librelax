@@ -151,8 +151,8 @@ square_test2(int input_n)
 		memcpy(x0, b, m * sizeof b[0]);
 		memcpy(C, A, m * stride * sizeof A[0]);
 		feclearexcept(FE_ALL_EXCEPT);
-		if(relax_solve(C, m, n, stride, x0) == -1){
-			fprintf(stderr, "relax_solve: matrix is singular\n");
+		if(relax_gauss(C, m, n, stride, x0) == -1){
+			fprintf(stderr, "relax_gauss: matrix is singular\n");
 			exit(1);
 		}
 
@@ -242,8 +242,8 @@ lsq_test2(int input_n)
 		for(i = 0; i < n; i++)
 			x0[i] = c[i];
 		feclearexcept(FE_ALL_EXCEPT);
-		if(relax_solve(C, n, n, n, x0) == -1){
-			fprintf(stderr, "relax_solve: matrix is singular\n");
+		if(relax_gauss(C, n, n, n, x0) == -1){
+			fprintf(stderr, "relax_gauss: matrix is singular\n");
 			exit(1);
 		}
 		if(fetestexcept(FE_ALL_EXCEPT & ~FE_INEXACT)){
@@ -344,8 +344,8 @@ minnorm_test2(int input_n)
 		for(i = 0; i < m; i++)
 			x0[i] = b[i];
 		feclearexcept(FE_ALL_EXCEPT);
-		if(relax_solve(C, m, m, m, x0) == -1){
-			fprintf(stderr, "relax_solve: matrix is singular\n");
+		if(relax_gauss(C, m, m, m, x0) == -1){
+			fprintf(stderr, "relax_gauss: matrix is singular\n");
 			exit(1);
 		}
 		if(fetestexcept(FE_ALL_EXCEPT & ~FE_INEXACT)){
@@ -468,7 +468,7 @@ main(void)
 	minnorm_test2(300);
 	printf("\n");
 
-	svd_test(300 + lrand48()%300, 300 + lrand48()%300, 0);
+	svd_test(300 + lrand48()%300, 300, 0);
 //	svd_test(20, 20, 1);
 
 
