@@ -16,11 +16,11 @@ relax_pinvtb(double *U, int m, int n, int ustride, double *V, int vstride, doubl
 	int i;
 
 	// tmp = V*b
-	relax_ab(V, n, n, vstride, b, tmp);
+	relax_atb(V, n, n, vstride, b, tmp);
 	// tmp = Σ⁻¹*tmp
 	for(i = 0; i < n; i++)
 		if(fabs(w[i]) > 1e-12)
 			tmp[i] = tmp[i] / w[i];
 	// x = Uᵀ*tmp
-	relax_atb(U, m, n, ustride, tmp, x);
+	relax_ab(U, m, n, ustride, tmp, x);
 }
