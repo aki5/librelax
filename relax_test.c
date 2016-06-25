@@ -67,8 +67,7 @@ iterative_gs(double *A, int m, int n, int stride, double *b, double *x0)
 		maxres = relax_sor(A, m, n, stride, b, x0, x0, NULL, 1.0); // for gauss-seidel
 		if(fetestexcept(FE_ALL_EXCEPT & ~FE_INEXACT)){
 			fprintf(stderr,
-				"%-25s floating point exception:%s%s%s%s%s\n",
-				"gauss-seidel",
+				"floating point exception:%s%s%s%s%s\n",
 				fetestexcept(FE_DIVBYZERO) ? " FE_DIVBYZERO" : "",
 				fetestexcept(FE_INEXACT) ? " FE_INEXACT" : "",
 				fetestexcept(FE_INVALID) ? " FE_INVALID" : "",
@@ -228,7 +227,7 @@ random_test(int input_n, int input_m)
 		if((err = (*solvers[si])(A, m, n, stride, b, x0)) == -1)
 			continue;
 		maxres = relax_maxres(A, m, n, stride, b, x0, res);
-		printf("%dx%d %-25s maxres %.20f\n", m, n, solver_names[si], maxres);
+		printf("%dx%d %-12s maxres %.20f\n", m, n, solver_names[si], maxres);
 	}
 
 	free(A);
