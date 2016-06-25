@@ -54,7 +54,7 @@ build_system(double *A, int m, int n, int stride, double *b)
 }
 
 int
-iterative_gs(double *A, int m, int n, int stride, double *b, double *x0)
+iterate_gs(double *A, int m, int n, int stride, double *b, double *x0)
 {
 	double maxres;
 	int i;
@@ -62,7 +62,7 @@ iterative_gs(double *A, int m, int n, int stride, double *b, double *x0)
 	for(i = 0; i < m; i++)
 		x0[i] = 0.0;
 
-	for(i = 0; i < 1000; i++){
+	for(i = 0; i < 10000; i++){
 		feclearexcept(FE_ALL_EXCEPT);
 		maxres = relax_sor(A, m, n, stride, b, x0, x0, NULL, 1.0); // for gauss-seidel
 		if(fetestexcept(FE_ALL_EXCEPT & ~FE_INEXACT)){
@@ -76,11 +76,52 @@ iterative_gs(double *A, int m, int n, int stride, double *b, double *x0)
 			);
 			return -1;
 		}
-		if(maxres < 1e-14)
+		if(maxres < 1e-16)
 			break;
 	}
 	return 0;
 }
+
+int
+gauss_seidel(double *A, int m, int n, int stride, double *b, double *x0)
+{
+	double *C, *c;
+	int i, err;
+
+	err = 0;
+	if(m == n){
+		memcpy(x0, b, m * sizeof b[0]);
+		if((err = iterate_gs(A, m, n, stride, b, x0)) == -1){
+			fprintf(stderr, "relax_gauss: could not solve\n");
+			err = -1;
+		}
+	} else if(m > n){ // overdetermined, solve for least squares fit
+
+		C = malloc(n * n * sizeof C[0]);
+		c = malloc(m * sizeof c[0]);
+		relax_ata(A, m, n, stride, C, n);
+		relax_atb(A, m, n, stride, b, c);
+		if((err = iterate_gs(C, n, n, n, c, x0)) == -1){
+			fprintf(stderr, "relax_gauss: could not solve\n");
+			err = -1;
+		}
+		free(C);
+		free(c);
+	} else { // underdetermined, solve for minimum norm
+		C = malloc(m * m * sizeof C[0]);
+		c = malloc(m * sizeof c[0]);
+		relax_aat(A, m, n, stride, C, m);
+		if((err = iterate_gs(C, m, m, m, b, c)) == -1){
+			fprintf(stderr, "relax_gauss: could not solve\n");
+			err = -1;
+		}
+		relax_atb(A, m, n, stride, c, x0);
+		free(C);
+		free(c);
+	}
+	return err;
+}
+
 
 int
 direct_gauss(double *A, int m, int n, int stride, double *b, double *x0)
@@ -191,13 +232,13 @@ direct_svd(double *A, int m, int n, int stride, double *b, double *x0)
 }
 
 int (*solvers[])(double *A, int m, int n, int stride, double *b, double *x0) = {
-//	iterative_gs,
+	gauss_seidel,
 	direct_gauss,
 	direct_svd,
 };
 
 char *solver_names[] = {
-//	"gauss-seidel",
+	"gauss_seidel",
 	"direct_gauss",
 	"direct_svd",
 };
