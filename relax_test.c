@@ -10,7 +10,7 @@
 #define nelem(x) (int)((sizeof(x)/sizeof((x)[0])))
 
 int diagdom = 0;
-int nloops = 10;
+int nloops = 100;
 int (*solvers[])(double *A, int m, int n, int stride, double *b, double *x0);
 
 void
@@ -86,20 +86,43 @@ iterative_gs(double *A, int m, int n, int stride, double *b, double *x0)
 int
 direct_gauss(double *A, int m, int n, int stride, double *b, double *x0)
 {
-	double *C;
-	int err;
+	double *C, *c;
+	int i, err;
 
 	err = 0;
-	memcpy(x0, b, m * sizeof b[0]);
-	C = malloc(m * stride * sizeof C[0]);
-	memcpy(C, A, m * stride * sizeof A[0]);
-	feclearexcept(FE_ALL_EXCEPT);
-	if((err = relax_gauss(C, m, n, stride, x0)) == -1){
-		fprintf(stderr, "relax_gauss: matrix is singular\n");
-		goto err_out;
+	if(m == n){
+		C = malloc(m * stride * sizeof C[0]);
+		memcpy(C, A, m * stride * sizeof A[0]);
+		memcpy(x0, b, m * sizeof b[0]);
+		if((err = relax_gauss(C, m, n, stride, x0)) == -1){
+			fprintf(stderr, "relax_gauss: could not solve\n");
+			err = -1;
+		}
+		free(C);
+	} else if(m > n){ // overdetermined, solve for least squares fit
+
+		C = malloc(n * n * sizeof C[0]);
+		relax_ata(A, m, n, stride, C, n);
+		relax_atb(A, m, n, stride, b, x0);
+		if((err = relax_gauss(C, n, n, n, x0)) == -1){
+			fprintf(stderr, "relax_gauss: could not solve\n");
+			err = -1;
+		}
+		free(C);
+	} else { // underdetermined, solve for minimum norm
+		C = malloc(m * m * sizeof C[0]);
+		c = malloc(m * sizeof c[0]);
+		relax_aat(A, m, n, stride, C, m);
+		for(i = 0; i < m; i++)
+			c[i] = b[i];
+		if((err = relax_gauss(C, m, m, m, c)) == -1){
+			fprintf(stderr, "relax_gauss: could not solve\n");
+			err = -1;
+		}
+		relax_atb(A, m, n, stride, c, x0);
+		free(C);
+		free(c);
 	}
-err_out:
-	free(C);
 	return err;
 }
 
@@ -110,15 +133,23 @@ direct_svd(double *A, int m, int n, int stride, double *b, double *x0)
 	int ustride, vstride;
 	int err;
 
-	if(m == n){
-		ustride = m;
+	if(m >= n){
+		int i, j;
+
+		ustride = n;
 		vstride = n;
 		U = malloc(m * ustride * sizeof U[0]);
 		V = malloc(n * vstride * sizeof V[0]);
 		w = malloc(n * sizeof w[0]);
-		tmpvec = malloc(n * sizeof tmpvec[0]);
+		tmpvec = malloc(m * sizeof tmpvec[0]);
 
-		memcpy(U, A, m * ustride * sizeof U[0]);
+		// copy A into U.
+		for(i = 0; i < m; i++){
+			for(j = 0; j < n; j++)
+				U[i*ustride+j] = A[i*stride+j];
+			for(; j < ustride; j++)
+				U[i*ustride+j] = 0.0;
+		}
 		err = relax_svd(U, m, n, ustride, V, vstride, w, tmpvec);
 		relax_pinvb(U, m, n, ustride, V, vstride, w, b, x0, tmpvec);
 
@@ -126,152 +157,84 @@ direct_svd(double *A, int m, int n, int stride, double *b, double *x0)
 		free(V);
 		free(w);
 		free(tmpvec);
-
-	} else if(m > n){
-		err = -1;
 	} else {
-		err = -1;
+		int i, j;
+
+		// swap so that m is the bigger one.
+		i = m;
+		m = n;
+		n = i;
+
+		ustride = n;
+		vstride = n;
+		U = malloc(m * ustride * sizeof U[0]);
+		V = malloc(n * vstride * sizeof V[0]);
+		w = malloc(n * sizeof w[0]);
+		tmpvec = malloc(m * sizeof tmpvec[0]);
+
+		// transpose A into U.
+		for(i = 0; i < m; i++){
+			for(j = 0; j < n; j++)
+				U[i*ustride+j] = A[j*stride+i];
+			for(; j < ustride; j++)
+				U[i*ustride+j] = 0.0;
+		}
+		err = relax_svd(U, m, n, ustride, V, vstride, w, tmpvec);
+		relax_pinvtb(U, m, n, ustride, V, vstride, w, b, x0, tmpvec);
+
+		free(U);
+		free(V);
+		free(w);
+		free(tmpvec);
 	}
 
 	return err;
 }
 
 int (*solvers[])(double *A, int m, int n, int stride, double *b, double *x0) = {
-	iterative_gs,
+//	iterative_gs,
 	direct_gauss,
 	direct_svd,
 };
 
 char *solver_names[] = {
-	"gauss-seidel",
+//	"gauss-seidel",
 	"direct_gauss",
 	"direct_svd",
 };
 
+
 int
-square_test(int input_n)
+random_test(int input_n, int input_m)
 {
-	double *A, *b, *x0, *x1;
+	double *A, *b, *x0, *res;
 	double maxres;
 	int si, m, n, stride;
-	int loop;
 	int err;
 
 	err = 0;
-	m = input_n;
+	m = input_m;
 	n = input_n;
-	fprintf(stderr, "square_test %dx%d\n", m, n);
-
-	stride = n;
-	A = malloc(m * stride * sizeof A[0]);
-	b = malloc(n * sizeof b[0]);
-	x0 = malloc(n * sizeof x0[0]);
-	x1 = malloc(n * sizeof x1[0]);
-
-	for(loop = 0; loop < nloops; loop++){
-		build_system(A, m, n, stride, b);
-		for(si = 0; si < nelem(solvers); si++){
-			if((err = (*solvers[si])(A, m, n, stride, b, x0)) == -1)
-				continue;
-			maxres = relax_maxres(A, m, n, stride, b, x0, x1);
-			printf("%-25s maxres %.20f\n", solver_names[si], maxres);
-		}
-	}
-
-	free(A);
-	free(b);
-	free(x0);
-	free(x1);
-	return err;
-}
-
-int
-lsq_test(int input_n)
-{
-	double *A, *b, *x0, *x1;
-	double *C, *c;
-	double maxres;
-	int si, m, n, stride;
-	int loop;
-	int err;
-
-	err = 0;
-
-	m = input_n + 1 + lrand48()%input_n;
-	n = input_n;
-	fprintf(stderr, "lsq_test %dx%d\n", m, n);
 
 	stride = n;
 	A = malloc(m * stride * sizeof A[0]);
 	b = malloc(m * sizeof b[0]);
-	x0 = malloc(m * sizeof x0[0]);
-	x1 = malloc(m * sizeof x1[0]);
-
-	C = malloc(n * n * sizeof C[0]);
-	c = malloc(m * sizeof c[0]);
-
-	for(loop = 0; loop < nloops; loop++){
-		build_system(A, m, n, stride, b);
-		for(si = 0; si < nelem(solvers); si++){
-			relax_ata(A, m, n, stride, C, n); // this is the slow step.
-			relax_atb(A, m, n, stride, b, c);
-			if((err = (*solvers[si])(C, n, n, n, c, x0)) == -1)
-				continue;
-			maxres = relax_maxres(A, m, n, stride, b, x0, c);
-			printf("%-25s maxres %.20f\n", solver_names[si], maxres);
-		}
-	}
-
-	free(A);
-	free(b);
-	free(x0);
-	free(x1);
-	free(C);
-	free(c);
-	return err;
-}
-
-int
-minnorm_test(int input_n)
-{
-	double *A, *b, *x0;
-	double *C, *c;
-	double maxres;
-	int si, m, n, stride;
-	int loop;
-	int err;
-
-	err = 0;
-	m = input_n;
-	n = input_n + 1 + lrand48()%input_n;
-	fprintf(stderr, "minnorm_test %dx%d\n", m, n);
-
-	stride = n;
-	A = malloc(m * stride * sizeof A[0]);
-	b = malloc(n * sizeof b[0]);
 	x0 = malloc(n * sizeof x0[0]);
+	res = malloc(m * sizeof res[0]);
 
-	C = malloc(m * m * sizeof C[0]);
-	c = malloc(n * sizeof c[0]);
-
-	for(loop = 0; loop < nloops; loop++){
-		build_system(A, m, n, stride, b);
-		for(si = 0; si < nelem(solvers); si++){
-			relax_aat(A, m, n, stride, C, m); // this is the slow step.
-			if((err = (*solvers[si])(C, m, m, m, b, x0)) == -1)
-				continue;
-			relax_atb(A, m, n, stride, x0, c);
-
-			maxres = relax_maxres(A, m, n, stride, b, c, x0);
-			printf("%-25s maxres %.20f\n", solver_names[si], maxres);
-		}
+	// A[m][n] * x[n] = b[m]
+	build_system(A, m, n, stride, b);
+	for(si = 0; si < nelem(solvers); si++){
+		if((err = (*solvers[si])(A, m, n, stride, b, x0)) == -1)
+			continue;
+		maxres = relax_maxres(A, m, n, stride, b, x0, res);
+		printf("%dx%d %-25s maxres %.20f\n", m, n, solver_names[si], maxres);
 	}
 
 	free(A);
 	free(b);
 	free(x0);
-	free(C);
-	free(c);
+	free(res);
 	return err;
 }
 
@@ -279,16 +242,16 @@ int
 main(void)
 {
 	struct timeval tval;
+	int loop, rndmax;
 
 	gettimeofday(&tval, NULL);
 	srand48(tval.tv_sec ^ tval.tv_usec);
 
-	square_test(300);
-	printf("\n");
-	lsq_test(300);
-	printf("\n");
-	minnorm_test(300);
-	printf("\n");
+	rndmax = 100;
+	for(loop = 0; loop < nloops; loop++){
+		random_test(rndmax + lrand48()%rndmax, rndmax + lrand48()%rndmax);
+		printf("\n");
+	}
 
 	return 0;
 }
