@@ -76,7 +76,7 @@ iterate_gs(double *A, int m, int n, int stride, double *b, double *x0)
 			);
 			return -1;
 		}
-		if(maxres < 1e-16)
+		if(maxres < 1e-14)
 			break;
 	}
 	return 0;
@@ -86,39 +86,41 @@ int
 gauss_seidel(double *A, int m, int n, int stride, double *b, double *x0)
 {
 	double *C, *c;
-	int i, err;
+	int err;
 
 	err = 0;
+	C = NULL;
+	c = NULL;
 	if(m == n){
 		memcpy(x0, b, m * sizeof b[0]);
 		if((err = iterate_gs(A, m, n, stride, b, x0)) == -1){
-			fprintf(stderr, "relax_gauss: could not solve\n");
 			err = -1;
+			goto err_out;
 		}
 	} else if(m > n){ // overdetermined, solve for least squares fit
-
 		C = malloc(n * n * sizeof C[0]);
 		c = malloc(m * sizeof c[0]);
 		relax_ata(A, m, n, stride, C, n);
 		relax_atb(A, m, n, stride, b, c);
 		if((err = iterate_gs(C, n, n, n, c, x0)) == -1){
-			fprintf(stderr, "relax_gauss: could not solve\n");
 			err = -1;
+			goto err_out;
 		}
-		free(C);
-		free(c);
 	} else { // underdetermined, solve for minimum norm
 		C = malloc(m * m * sizeof C[0]);
 		c = malloc(m * sizeof c[0]);
 		relax_aat(A, m, n, stride, C, m);
 		if((err = iterate_gs(C, m, m, m, b, c)) == -1){
-			fprintf(stderr, "relax_gauss: could not solve\n");
 			err = -1;
+			goto err_out;
 		}
 		relax_atb(A, m, n, stride, c, x0);
-		free(C);
-		free(c);
 	}
+err_out:
+	if(C != NULL)
+		free(C);
+	if(c != NULL)
+		free(c);
 	return err;
 }
 
@@ -130,6 +132,8 @@ direct_gauss(double *A, int m, int n, int stride, double *b, double *x0)
 	int i, err;
 
 	err = 0;
+	C = NULL;
+	c = NULL;
 	if(m == n){
 		C = malloc(m * stride * sizeof C[0]);
 		memcpy(C, A, m * stride * sizeof A[0]);
@@ -137,8 +141,8 @@ direct_gauss(double *A, int m, int n, int stride, double *b, double *x0)
 		if((err = relax_gauss(C, m, n, stride, x0)) == -1){
 			fprintf(stderr, "relax_gauss: could not solve\n");
 			err = -1;
+			goto err_out;
 		}
-		free(C);
 	} else if(m > n){ // overdetermined, solve for least squares fit
 
 		C = malloc(n * n * sizeof C[0]);
@@ -147,8 +151,8 @@ direct_gauss(double *A, int m, int n, int stride, double *b, double *x0)
 		if((err = relax_gauss(C, n, n, n, x0)) == -1){
 			fprintf(stderr, "relax_gauss: could not solve\n");
 			err = -1;
+			goto err_out;
 		}
-		free(C);
 	} else { // underdetermined, solve for minimum norm
 		C = malloc(m * m * sizeof C[0]);
 		c = malloc(m * sizeof c[0]);
@@ -158,11 +162,15 @@ direct_gauss(double *A, int m, int n, int stride, double *b, double *x0)
 		if((err = relax_gauss(C, m, m, m, c)) == -1){
 			fprintf(stderr, "relax_gauss: could not solve\n");
 			err = -1;
+			goto err_out;
 		}
 		relax_atb(A, m, n, stride, c, x0);
-		free(C);
-		free(c);
 	}
+err_out:
+	if(C != NULL)
+		free(C);
+	if(c != NULL)
+		free(c);
 	return err;
 }
 
@@ -287,7 +295,7 @@ main(void)
 	gettimeofday(&tval, NULL);
 	srand48(tval.tv_sec ^ tval.tv_usec);
 
-	rndmax = 100;
+	rndmax = 50;
 	for(loop = 0; loop < nloops; loop++){
 		random_test(rndmax + lrand48()%rndmax, rndmax + lrand48()%rndmax);
 		printf("\n");
