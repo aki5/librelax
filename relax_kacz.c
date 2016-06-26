@@ -4,8 +4,18 @@
 #include "relax.h"
 
 /*
- *	the kaczmarz iteration solves Ax = b for x by adjusting the guess x0 so that
- *	the residual corresponding with that row becomes zero.
+ *	The Kaczmarz iteration solves Ax = b for x
+ *
+ *	Mathematically this is orthogonally projecting the solution to a
+ *	hyperplane defined by the selected row.
+ *
+ *	Technically that translates to adding a multiple of the selected row
+ *	to the current guess, while selecting a multiplier that causes the
+ *	row residual to become zero.
+ *
+ *	The convergence properties of this algorithm are poorly understood.
+ *	It seems to perform poorly on random matrices and their normal forms,
+ *	but compares with gauss-seidel on diagonally dominant matrices.
  */
 int
 relax_kacz(double *A, int m, int n, int stride, double *b, double *x0, int rowi)
@@ -22,8 +32,6 @@ relax_kacz(double *A, int m, int n, int stride, double *b, double *x0, int rowi)
 	for(i = 0; i < n; i++)
 		x0[i] -= fact*A[arow+i];
 
-	
-	//fprintf(stderr, "relax_kacz: row %d: rowres %f result %f\n", rowi, rowres, relax_dot(A+arow, 1, x0, 1, n) - b[rowi]);
 
 	return 0;
 }
