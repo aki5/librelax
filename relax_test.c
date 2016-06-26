@@ -9,7 +9,7 @@
 
 #define nelem(x) (int)((sizeof(x)/sizeof((x)[0])))
 
-int diagdom = 0;
+int diagdom = 1;
 int nloops = 100;
 int (*solvers[])(double *A, int m, int n, int stride, double *b, double *x0);
 
@@ -53,6 +53,47 @@ build_system(double *A, int m, int n, int stride, double *b)
 	}
 }
 
+
+int
+iterate_kacz(double *A, int m, int n, int stride, double *b, double *x0)
+{
+	double maxres;
+	double *res;
+	int i, row;
+
+	res = malloc(n * sizeof res[0]);
+	for(i = 0; i < m; i++)
+		x0[i] = 0.0;
+
+	for(i = 0; i < 10000; i++){
+		feclearexcept(FE_ALL_EXCEPT);
+		if(relax_kacz(A, m, n, stride, b, x0, lrand48()%m) == -1){
+			fprintf(stderr, "relax_kacz failed\n");
+			free(res);
+			return -1; 
+		}
+		maxres = relax_maxres(A, m, n, stride, b, x0, res);
+		if(fetestexcept(FE_ALL_EXCEPT & ~FE_INEXACT)){
+			fprintf(stderr,
+				"floating point exception:%s%s%s%s%s\n",
+				fetestexcept(FE_DIVBYZERO) ? " FE_DIVBYZERO" : "",
+				fetestexcept(FE_INEXACT) ? " FE_INEXACT" : "",
+				fetestexcept(FE_INVALID) ? " FE_INVALID" : "",
+				fetestexcept(FE_OVERFLOW) ? " FE_OVERFLOW" : "",
+				fetestexcept(FE_UNDERFLOW) ? " FE_UNDERFLOW" : ""
+			);
+			free(res);
+			return -1;
+		}
+		if(maxres < 1e-14)
+			break;
+		//fprintf(stderr, "iterate_kacz maxres %f\n", maxres);
+	}
+	free(res);
+	return 0;
+}
+
+
 int
 iterate_gs(double *A, int m, int n, int stride, double *b, double *x0)
 {
@@ -80,6 +121,48 @@ iterate_gs(double *A, int m, int n, int stride, double *b, double *x0)
 			break;
 	}
 	return 0;
+}
+
+int
+kaczmarz(double *A, int m, int n, int stride, double *b, double *x0)
+{
+	double *C, *c;
+	int err;
+
+	err = 0;
+	C = NULL;
+	c = NULL;
+	if(m == n){
+		memcpy(x0, b, m * sizeof b[0]);
+		if((err = iterate_kacz(A, m, n, stride, b, x0)) == -1){
+			err = -1;
+			goto err_out;
+		}
+	} else if(m > n){ // overdetermined, solve for least squares fit
+		C = malloc(n * n * sizeof C[0]);
+		c = malloc(m * sizeof c[0]);
+		relax_ata(A, m, n, stride, C, n);
+		relax_atb(A, m, n, stride, b, c);
+		if((err = iterate_kacz(C, n, n, n, c, x0)) == -1){
+			err = -1;
+			goto err_out;
+		}
+	} else { // underdetermined, solve for minimum norm
+		C = malloc(m * m * sizeof C[0]);
+		c = malloc(m * sizeof c[0]);
+		relax_aat(A, m, n, stride, C, m);
+		if((err = iterate_kacz(C, m, m, m, b, c)) == -1){
+			err = -1;
+			goto err_out;
+		}
+		relax_atb(A, m, n, stride, c, x0);
+	}
+err_out:
+	if(C != NULL)
+		free(C);
+	if(c != NULL)
+		free(c);
+	return err;
 }
 
 int
@@ -240,12 +323,14 @@ direct_svd(double *A, int m, int n, int stride, double *b, double *x0)
 }
 
 int (*solvers[])(double *A, int m, int n, int stride, double *b, double *x0) = {
+	kaczmarz,
 	gauss_seidel,
 	direct_gauss,
 	direct_svd,
 };
 
 char *solver_names[] = {
+	"kaczmarz",
 	"gauss_seidel",
 	"direct_gauss",
 	"direct_svd",

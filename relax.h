@@ -11,7 +11,7 @@
  *	0.0 < w < 2.0: relaxation factor, w < 1.0 is under-relaxed, w > 1.0 is over-relaxed.
  */
 double relax_sor(double *A, int m, int n, int stride, double *b, double *x0, double *x1, double *res, double w);
-
+int relax_kacz(double *A, int m, int n, int stride, double *b, double *x0, int rowi);
 /*
  *	relax_solve and relax_gauss destructively solves the system
  *	Ax = b for x.
@@ -103,3 +103,11 @@ void relax_ab(double *A, int m, int n, int astride, double *b, double *c);
  *	and returns the maximum absolute value in that vector.
  */
 double relax_maxres(double *A, int m, int n, int stride, double *b, double *x, double *res);
+
+/*
+ *	relax_dot computes the dot product between the vectors a and b.
+ *
+ *	the stride parameters can be used to use a matrix column as a vector,
+ *	but should be passed in as 1 for row vectors or when using a matrix row.
+ */
+double relax_dot(double *a, int astride, double *b, int bstride, int n);

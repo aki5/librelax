@@ -6,7 +6,9 @@ LIBRELAX_OFILES=\
 	relax_ab.o\
 	relax_ata.o\
 	relax_atb.o\
+	relax_dot.o\
 	relax_gauss.o\
+	relax_kacz.o\
 	relax_maxres.o\
 	relax_pinvb.o\
 	relax_pinvtb.o\
