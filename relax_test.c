@@ -59,20 +59,21 @@ iterate_kacz(double *A, int m, int n, int stride, double *b, double *x0)
 {
 	double maxres;
 	double *res;
-	int i, row;
+	int i, j, row;
 
 	res = malloc(n * sizeof res[0]);
 	for(i = 0; i < m; i++)
 		x0[i] = 0.0;
 
-	for(i = 0; i < 10000; i++){
+	for(i = 0; i < 100; i++){
 		feclearexcept(FE_ALL_EXCEPT);
-		if(relax_kacz(A, m, n, stride, b, x0, lrand48()%m) == -1){
-			fprintf(stderr, "relax_kacz failed\n");
-			free(res);
-			return -1; 
+		for(j = 0; j < 100; j++){
+			if(relax_kacz(A, m, n, stride, b, x0, lrand48()%m) == -1){
+				fprintf(stderr, "relax_kacz failed\n");
+				free(res);
+				return -1;
+			}
 		}
-		maxres = relax_maxres(A, m, n, stride, b, x0, res);
 		if(fetestexcept(FE_ALL_EXCEPT & ~FE_INEXACT)){
 			fprintf(stderr,
 				"floating point exception:%s%s%s%s%s\n",
@@ -85,7 +86,9 @@ iterate_kacz(double *A, int m, int n, int stride, double *b, double *x0)
 			free(res);
 			return -1;
 		}
-		if(maxres < 1e-14)
+
+		maxres = relax_maxres(A, m, n, stride, b, x0, res);
+		if(maxres < 1e-12)
 			break;
 		//fprintf(stderr, "iterate_kacz maxres %f\n", maxres);
 	}
@@ -117,7 +120,7 @@ iterate_gs(double *A, int m, int n, int stride, double *b, double *x0)
 			);
 			return -1;
 		}
-		if(maxres < 1e-14)
+		if(maxres < 1e-12)
 			break;
 	}
 	return 0;
