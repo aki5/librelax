@@ -10,7 +10,7 @@
  *	w == 1.0: classic jacobi or gauss-seidel.
  *	0.0 < w < 2.0: relaxation factor, w < 1.0 is under-relaxed, w > 1.0 is over-relaxed.
  */
-double relax_sor(double *A, int m, int n, int stride, double *b, double *x0, double *x1, double *res, double w);
+double relax_sor(double *A, int m, int n, int stride, double *b, double *x0, double *res);
 int relax_kacz(double *A, int m, int n, int stride, double *b, double *x0, int rowi);
 /*
  *	relax_solve and relax_gauss destructively solves the system

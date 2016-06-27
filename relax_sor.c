@@ -3,7 +3,7 @@
 #include "relax.h"
 
 double
-relax_sor(double *A, int m, int n, int stride, double *b, double *x0, double *x1, double *res, double w)
+relax_sor(double *A, int m, int n, int stride, double *b, double *x0, double *res)
 {
 	double sigma, rowres, maxres;
 	int i, j, irow;
@@ -22,8 +22,8 @@ relax_sor(double *A, int m, int n, int stride, double *b, double *x0, double *x1
 				sigma += tmp;
 		}
 
-		//x1[i] = (b[i] - sigma) / A[irow+i]; // jacobi, gauss-seidel
-		x1[i] = (1.0 - w)*x0[i] + w*(b[i] - sigma) / A[irow+i]; // successive over-relaxation (sor)
+		x0[i] = (b[i] - sigma) / A[irow+i]; // jacobi, gauss-seidel
+		//x1[i] = (1.0 - w)*x0[i] + w*(b[i] - sigma) / A[irow+i]; // successive over-relaxation (sor)
 
 		rowres = b[i] - rowres;
 		rowres = fabs(rowres);
