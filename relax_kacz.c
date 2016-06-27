@@ -31,9 +31,9 @@
  *	    Randomized extended Kaczmarz for solving least squares.
  *	    https://arxiv.org/pdf/1205.5770v3.pdf
  *
- *	[3] Convergence properties of the randomized extended
- *	    Gauss-Seidel and Kaczmarz methods
- *	    Anna Ma, Deanna Needell, Aaditya Ramdas
+ *	[3] Anna Ma, Deanna Needell, Aaditya Ramdas.
+ *	    Convergence properties of the randomized extended Gauss-Seidel
+ *	    and Kaczmarz methods.
  *	    http://opt-ml.org/papers/OPT2015_paper_7.pdf
  */
 int
