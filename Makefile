@@ -13,7 +13,7 @@ LIBRELAX_OFILES=\
 	relax_pinvb.o\
 	relax_pinvtb.o\
 	relax_solve.o\
-	relax_sor.o\
+	relax_coordesc.o\
 	relax_svd.o\
 
 test: relax_test

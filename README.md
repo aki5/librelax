@@ -2,31 +2,26 @@
 
 [![Build Status](https://travis-ci.org/aki5/librelax.svg?branch=master)](https://travis-ci.org/aki5/librelax)
 
-## Successive over-relaxation step
+## Coordinate Descent (aka. Gauss-Seidel) method
 
-Relax_sor implements the successive over-relaxation step for a dense M-by-N matrix. It runs a single pass through the matrix, reading the previous solution (guess) from x0 and storing the new one in x1. A typical program will call this function in a loop, until the return value (maximum residual) falls beyond the required error threshold.
+Relax_coordesc implements a relaxation step for a dense M-by-N matrix
 
-The SOR (gauss-seidel) method converges if A is symmetric and positive (semi)definite, which is good news for least squares formulations, because
-
-* AᵀA and AAᵀ are symmetric, and
-* AᵀA and AAᵀ are positive semi-definite for any matrix A.
+The method will converge if A is symmetric and positive (semi)definite. Notably, the normal equations AᵀA and AAᵀ which can be used to make least squares and least norm solutions for over- and underdetermined systems fall into this category for any matrix.
 
 ```
-double relax_sor(
+double relax_coordesc(
 	double *A, int m, int n, int stride,
 	double *b,
-	double *x0, double *x1, double *res,
-	double w
+	double *x0,
+	double *res
 );
 ```
 
-There are M rows and N columns in the M-by-N matrix A, and the vectors b, x0 and x1 are column vectors of N elements each. In the source code, i indicates the row (0 to m-1), and j indicates the column (0 to n-1).
+There are M rows and N columns in the M-by-N matrix A, and the vectors b and x0 are column vectors of N elements each. In the source code, i indicates the row (0 to m-1), and j indicates the column (0 to n-1).
 
 Elements of A need to be stored in a dense matrix format, with M rows of N columns. Rows are offset from each other by stride elements. The  stride parameter can be used to pass in a part of a larger matrix without copying its contents, but is often passed in as N.
 
-If x0 and x1  are the same pointer, the step is gauss-seidel type (in-place update), but if they are different, the step is jacobi type (read from x0, write to x1)
-
-Relaxation factor w of 1.0 results in classical jacobi (x0 != x1) or gauss-seidel (x0 == x1), while w < 1.0 is under-relaxed and w > 1.0 is over-relaxed.
+The step makes an in-place update to the vector x0.
 
 Res is used to store a residual vector (which is computed as a side effect).
 

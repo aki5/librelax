@@ -105,7 +105,7 @@ iterate_gs(double *A, int m, int n, int stride, double *b, double *x0)
 
 	for(i = 0; i < 10000; i++){
 		feclearexcept(FE_ALL_EXCEPT);
-		maxres = relax_sor(A, m, n, stride, b, x0, NULL);
+		maxres = relax_coordesc(A, m, n, stride, b, x0, NULL);
 		if(fetestexcept(FE_ALL_EXCEPT & ~FE_INEXACT)){
 			fprintf(stderr,
 				"floating point exception:%s%s%s%s%s\n",

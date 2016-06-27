@@ -3,7 +3,7 @@
 #include "relax.h"
 
 double
-relax_sor(double *A, int m, int n, int stride, double *b, double *x0, double *res)
+relax_coordesc(double *A, int m, int n, int stride, double *b, double *x0, double *res)
 {
 	double sigma, rowres, maxres;
 	int i, j, irow;
