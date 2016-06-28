@@ -10,16 +10,17 @@
  *	defined by a (randomly) selected row.
  *
  *	This is achieved by computing the distance to the hyperplane by
- *	evaluating it for x, and then moving x towards the plane by
- *	that distance, in the normal direction of the plane.
+ *	first evaluating it for x, and then moving x toward the hyperplane,
+ *	in the normal direction of the hyperplane, by that distance.
  *
- *	An interesting property of this algorithm is, that it will operate
- *	on underdetermined systems, as there are as many hyperplanes to choose
- *	from as there are rows in the matrix.
+ *	The algorithm will operate on under- and overdetermined systems,
+ *	as the principle is sound regardless of how many equations there
+ *	are in the system.
  *
- *	Unfortunately, it turns out that the algorithm will not converge to a
- *	least squares solution for an overdetermined system (every iteration
- *	snaps it to one of the hyperplanes, it will not find a "compromise").
+ *	Unfortunately the algorithm will not converge to a least squares
+ *	solution for an overdetermined system: every iteration snaps it to
+ *	one of the hyperplanes, it will not find a "compromise" in between
+ *	the hyperplanes. [2] Describes a fix for this.
  *
  *	There has been renewed research interest in extending this algorithm
  *	[1][2][3], which is why it is included in this library.
