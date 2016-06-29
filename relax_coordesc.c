@@ -5,14 +5,13 @@
 /*
  *	The Gauss-Seidel iteration solves Ax = b for x
  *
- *	Instead of solving Ax = b directly, we'll reformulate the problem
- *	as finding the minimum of its integral F(x) instead.
+ *	Instead of solving Ax = b directly, we'll reformulate the problem as finding the minimum of its integral F(x) instead.
  *
  *	Assuming symmetric A, we have
  *
- *		F'(x) = 0.5*(Ax + Aᵀx) - b
+ *		δF(x)/δx = Ax - b = 0.5*(A+Aᵀ)x - b
  *
- *	which integrates into
+ *	which can be integrated into
  *
  *		F(x) = 0.5*xᵀAx - xᵀb.
  *
@@ -92,6 +91,12 @@
  *	that Gauss-Seidel sets x_i straight to minimizing error, while coordinate
  *	descent may use anything from a fixed step size to arbitrarily complex dynamic
  *	adjustments. Gauss-Seidel can be viewed as a special case of coordinate descent.
+ *
+ *	Notice that there's two places in the above derivation, including the very
+ *	starting point, where the matrix is assumed to be symmetric. Using the method
+ *	for non-symmetric cases will require changes to both, the algorithm and how
+ *	it is derived, but I hope the derivation here has shed enough light on the
+ *	underlying principles to allow creating custom variants where needed.
  *
  *	There has been a recent development of the idea, extending this algorithm to
  *	work for both, under- and overdetermined systems.
