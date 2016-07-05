@@ -128,7 +128,7 @@ iterate_gs(double *A, int m, int n, int stride, double *b, double *x0)
 }
 
 int
-iterate_steepdesc(double *A, int m, int n, int stride, double *b, double *x0, double *res, double *ares)
+iterate_graddesc(double *A, int m, int n, int stride, double *b, double *x0, double *res, double *ares)
 {
 	double maxres;
 	int i;
@@ -139,7 +139,7 @@ iterate_steepdesc(double *A, int m, int n, int stride, double *b, double *x0, do
 	maxres = relax_maxres(A, m, n, stride, b, x0, res);
 	for(i = 0; i < 100; i++){
 		feclearexcept(FE_ALL_EXCEPT);
-		maxres = relax_steepdesc(A, m, n, stride, x0, res, ares);
+		maxres = relax_graddesc(A, m, n, stride, x0, res, ares);
 		if(fetestexcept(FE_ALL_EXCEPT & ~FE_INEXACT)){
 			fprintf(stderr,
 				"floating point exception:%s%s%s%s%s\n",
@@ -256,7 +256,7 @@ steepest_descent(double *A, int m, int n, int stride, double *b, double *x0)
 		memcpy(x0, b, m * sizeof b[0]);
 		ares = malloc(m * sizeof ares[0]);
 		res = malloc(m * sizeof res[0]);
-		if((err = iterate_steepdesc(A, m, n, stride, b, x0, res, ares)) == -1){
+		if((err = iterate_graddesc(A, m, n, stride, b, x0, res, ares)) == -1){
 			err = -1;
 			goto err_out;
 		}
@@ -267,7 +267,7 @@ steepest_descent(double *A, int m, int n, int stride, double *b, double *x0)
 		res = malloc(n * sizeof res[0]);
 		relax_ata(A, m, n, stride, C, n);
 		relax_atb(A, m, n, stride, b, c);
-		if((err = iterate_steepdesc(C, n, n, n, c, x0, res, ares)) == -1){
+		if((err = iterate_graddesc(C, n, n, n, c, x0, res, ares)) == -1){
 			err = -1;
 			goto err_out;
 		}
@@ -277,7 +277,7 @@ steepest_descent(double *A, int m, int n, int stride, double *b, double *x0)
 		ares = malloc(m * sizeof ares[0]);
 		res = malloc(m * sizeof res[0]);
 		relax_aat(A, m, n, stride, C, m);
-		if((err = iterate_steepdesc(C, m, m, m, b, c, res, ares)) == -1){
+		if((err = iterate_graddesc(C, m, m, m, b, c, res, ares)) == -1){
 			err = -1;
 			goto err_out;
 		}

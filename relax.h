@@ -14,7 +14,7 @@ double relax_coordesc(double *A, int m, int n, int stride, double *b, double *x0
 int relax_kacz(double *A, int m, int n, int stride, double *b, double *x0, int rowi);
 
 /*
- *	steepest descent itaration
+ *	gradient descent iteration (method of steepest descent)
  *
  *	notice that the b-vector is not passed in explicitly, instead it is part
  *	of the initial residual res, which needs to be computed with relax_maxres
@@ -26,7 +26,7 @@ int relax_kacz(double *A, int m, int n, int stride, double *b, double *x0, int r
  *	If the caller is worried about drift due to roundoff, it is ok to recompute
  *	res at any time using relax_maxres.
  */
-double relax_steepdesc(double *A, int m, int n, int stride, double *x0, double *res, double *artmp);
+double relax_graddesc(double *A, int m, int n, int stride, double *x0, double *res, double *artmp);
 
 /*
  *	relax_solve and relax_gauss destructively solves the system

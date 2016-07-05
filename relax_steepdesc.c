@@ -3,7 +3,9 @@
 #include "relax.h"
 
 /*
- *	The Steepest Descent iteration solves Ax = b for x
+ *	The Gradient Descent iteration solves Ax = b for x,
+ *	it is also known as the method of steepest descent.
+ *
  *
  *	Instead of solving Ax = b directly, we'll reformulate the problem as
  *	finding the minimum of its integral F(x) instead.
@@ -51,15 +53,25 @@
  *	<=>
  *		a₀ = r₀ᵀr₀ / r₀ᵀAr₀
  *
- *	and so
+ *	and so we have
  *
  *		a₀ = r₀ᵀr₀ / r₀ᵀAr₀
- *		x₁ = x₀ + a₀*r₀ and
+ *		x₁ = x₀ + a₀r₀
+ *
+ *	to get a better solution x₁, and
+ *
+ *		x₁ = x₀ + a₀r₀
+ *	<=>	-Ax₁ = -Ax₀ - A(a₀r₀)
+ *	<=>	-Ax₁ + b = -Ax₀ - A(a₀r₀) + b
+ *	<=>	b - Ax₁ = b - Ax₀ - A(a₀r₀)
+ *	<=>	r₁ = r₀ - A(a₀r₀)
+ *	<=>
  *		r₁ = r₀ - a₀Ar₀
  *
- *	gives a better 'steepest descent' approximation x₁ and its residual
- *	when given a previous approximation x₀ and its corresponding residual
- *	r₀ = b₀ - Ax₀.
+ *	to get the next residual r₁.
+ *
+ *	This gives a better 'steepest descent' approximation x₁ and its residual
+ *	when given a previous one with its corresponding residual r₀ = b₀ - Ax₀.
  *
  *	As you might have noticed, the direction of steepest descent happens to
  *	be exactly the residual value for the system Ax = b as computed by
@@ -75,7 +87,7 @@
  *
  */
 double
-relax_steepdesc(double *A, int m, int n, int stride, double *x0, double *r0, double *ar0)
+relax_graddesc(double *A, int m, int n, int stride, double *x0, double *r0, double *ar0)
 {
 	double a, maxres;
 	int i;
