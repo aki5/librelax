@@ -8,6 +8,7 @@
 #include "relax.h"
 
 #define nelem(x) (int)((sizeof(x)/sizeof((x)[0])))
+#define TOLERANCE 1e-12
 
 int diagdom = 0;
 int nloops = 100;
@@ -88,7 +89,7 @@ iterate_kacz(double *A, int m, int n, int stride, double *b, double *x0)
 		}
 
 		maxres = relax_maxres(A, m, n, stride, b, x0, res);
-		if(maxres < 1e-12)
+		if(maxres < TOLERANCE)
 			break;
 		//fprintf(stderr, "iterate_kacz maxres %f\n", maxres);
 	}
@@ -106,7 +107,7 @@ iterate_gs(double *A, int m, int n, int stride, double *b, double *x0)
 	for(i = 0; i < m; i++)
 		x0[i] = 0.0;
 
-	for(i = 0; i < 10000; i++){
+	for(i = 0; i < 100; i++){
 		feclearexcept(FE_ALL_EXCEPT);
 		maxres = relax_coordesc(A, m, n, stride, b, x0, NULL);
 		if(fetestexcept(FE_ALL_EXCEPT & ~FE_INEXACT)){
@@ -120,8 +121,40 @@ iterate_gs(double *A, int m, int n, int stride, double *b, double *x0)
 			);
 			return -1;
 		}
-		if(maxres < 1e-12)
+		if(maxres < TOLERANCE)
 			break;
+	}
+	return 0;
+}
+
+int
+iterate_steepdesc(double *A, int m, int n, int stride, double *b, double *x0, double *res, double *ares)
+{
+	double maxres;
+	int i;
+
+	for(i = 0; i < m; i++)
+		x0[i] = 0.0;
+
+	maxres = relax_maxres(A, m, n, stride, b, x0, res);
+	for(i = 0; i < 100; i++){
+		feclearexcept(FE_ALL_EXCEPT);
+		maxres = relax_steepdesc(A, m, n, stride, x0, res, ares);
+		if(fetestexcept(FE_ALL_EXCEPT & ~FE_INEXACT)){
+			fprintf(stderr,
+				"floating point exception:%s%s%s%s%s\n",
+				fetestexcept(FE_DIVBYZERO) ? " FE_DIVBYZERO" : "",
+				fetestexcept(FE_INEXACT) ? " FE_INEXACT" : "",
+				fetestexcept(FE_INVALID) ? " FE_INVALID" : "",
+				fetestexcept(FE_OVERFLOW) ? " FE_OVERFLOW" : "",
+				fetestexcept(FE_UNDERFLOW) ? " FE_UNDERFLOW" : ""
+			);
+			return -1;
+		}
+		if(maxres < TOLERANCE)
+			break;
+		if((i & 63) == 63)
+			maxres = relax_maxres(A, m, n, stride, b, x0, res);
 	}
 	return 0;
 }
@@ -209,6 +242,57 @@ err_out:
 		free(c);
 	return err;
 }
+
+int
+steepest_descent(double *A, int m, int n, int stride, double *b, double *x0)
+{
+	double *C, *c, *res, *ares;
+	int err;
+
+	err = 0;
+	C = NULL;
+	c = NULL;
+	if(m == n){
+		memcpy(x0, b, m * sizeof b[0]);
+		ares = malloc(m * sizeof ares[0]);
+		res = malloc(m * sizeof res[0]);
+		if((err = iterate_steepdesc(A, m, n, stride, b, x0, res, ares)) == -1){
+			err = -1;
+			goto err_out;
+		}
+	} else if(m > n){ // overdetermined, solve for least squares fit
+		C = malloc(n * n * sizeof C[0]);
+		c = malloc(m * sizeof c[0]);
+		ares = malloc(n * sizeof ares[0]);
+		res = malloc(n * sizeof res[0]);
+		relax_ata(A, m, n, stride, C, n);
+		relax_atb(A, m, n, stride, b, c);
+		if((err = iterate_steepdesc(C, n, n, n, c, x0, res, ares)) == -1){
+			err = -1;
+			goto err_out;
+		}
+	} else { // underdetermined, solve for minimum norm
+		C = malloc(m * m * sizeof C[0]);
+		c = malloc(m * sizeof c[0]);
+		ares = malloc(m * sizeof ares[0]);
+		res = malloc(m * sizeof res[0]);
+		relax_aat(A, m, n, stride, C, m);
+		if((err = iterate_steepdesc(C, m, m, m, b, c, res, ares)) == -1){
+			err = -1;
+			goto err_out;
+		}
+		relax_atb(A, m, n, stride, c, x0);
+	}
+err_out:
+	if(C != NULL)
+		free(C);
+	if(c != NULL)
+		free(c);
+	free(res);
+	free(ares);
+	return err;
+}
+
 
 
 int
@@ -328,6 +412,7 @@ direct_svd(double *A, int m, int n, int stride, double *b, double *x0)
 int (*solvers[])(double *A, int m, int n, int stride, double *b, double *x0) = {
 	kaczmarz,
 	gauss_seidel,
+	steepest_descent,
 	direct_gauss,
 	direct_svd,
 };
@@ -335,6 +420,7 @@ int (*solvers[])(double *A, int m, int n, int stride, double *b, double *x0) = {
 char *solver_names[] = {
 	"kaczmarz",
 	"gauss_seidel",
+	"steepest_descent",
 	"direct_gauss",
 	"direct_svd",
 };
@@ -364,7 +450,7 @@ random_test(int input_n, int input_m)
 		if((err = (*solvers[si])(A, m, n, stride, b, x0)) == -1)
 			continue;
 		maxres = relax_maxres(A, m, n, stride, b, x0, res);
-		printf("%dx%d %-12s maxres %.20f\n", m, n, solver_names[si], maxres);
+		printf("%dx%d %-18s maxres %.20f\n", m, n, solver_names[si], maxres);
 	}
 
 	free(A);

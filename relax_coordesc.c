@@ -72,8 +72,6 @@
  *
  *	we can write
  *
- *
- *
  *		δF/δx_i = 0.5*(rowsum + colsum + 2*A_ii*x_i) - b_i = 0
  *
  *	which, when solved for for x_i, gives us

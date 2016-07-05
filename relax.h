@@ -7,7 +7,27 @@
  *
  */
 double relax_coordesc(double *A, int m, int n, int stride, double *b, double *x0, double *res);
+
+/*
+ *	kaczmarz iteration
+ */
 int relax_kacz(double *A, int m, int n, int stride, double *b, double *x0, int rowi);
+
+/*
+ *	steepest descent itaration
+ *
+ *	notice that the b-vector is not passed in explicitly, instead it is part
+ *	of the initial residual res, which needs to be computed with relax_maxres
+ *	before the first invocation of relax_steepdesc for the current problem.
+ *
+ *	Ar must be an n-vector, it is used to store the matrix-vector product Ar
+ *	and is required to be non-NULL by the routine.
+ *
+ *	If the caller is worried about drift due to roundoff, it is ok to recompute
+ *	res at any time using relax_maxres.
+ */
+double relax_steepdesc(double *A, int m, int n, int stride, double *x0, double *res, double *artmp);
+
 /*
  *	relax_solve and relax_gauss destructively solves the system
  *	Ax = b for x.
@@ -81,8 +101,8 @@ void relax_pinvtb(double *U, int m, int n, int ustride, double *V, int vstride, 
  *
  *	relax_ab and relax_atb multiply b by A (transpose of A) and store the result in c
  *	A is MxN (has m rows and n columns)
- *	b is Nx1 (has m rows)
- *	c is 1xM (has n columns)
+ *	b is Nx1 (has m rows for relax_ab, n for relax_atb)
+ *	c is Mx1 (has n rows for relax_ab, m for relax_atb)
  *
  *	relax_at stores the transpose of A into C
  *	A is MxN (has m rows and n columns)
@@ -95,7 +115,7 @@ void relax_at(double *A, int m, int n, int astride, double *C, int cstride);
 void relax_ab(double *A, int m, int n, int astride, double *b, double *c);
 
 /*
- *	Relax_maxres computes the residual vector b-x for a system Ax = b
+ *	Relax_maxres computes the residual vector b - Ax for a system Ax = b
  *	and returns the maximum absolute value in that vector.
  */
 double relax_maxres(double *A, int m, int n, int stride, double *b, double *x, double *res);

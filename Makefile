@@ -6,6 +6,7 @@ LIBRELAX_OFILES=\
 	relax_ab.o\
 	relax_ata.o\
 	relax_atb.o\
+	relax_coordesc.o\
 	relax_dot.o\
 	relax_gauss.o\
 	relax_kacz.o\
@@ -13,7 +14,7 @@ LIBRELAX_OFILES=\
 	relax_pinvb.o\
 	relax_pinvtb.o\
 	relax_solve.o\
-	relax_coordesc.o\
+	relax_steepdesc.o\
 	relax_svd.o\
 
 test: relax_test
