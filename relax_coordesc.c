@@ -5,7 +5,8 @@
 /*
  *	The Gauss-Seidel iteration solves Ax = b for x
  *
- *	Instead of solving Ax = b directly, we'll reformulate the problem as finding the minimum of its integral F(x) instead.
+ *	Instead of solving Ax = b directly, we'll reformulate the problem as
+ *	finding the minimum of its integral F(x) instead.
  *
  *	Assuming symmetric A, we have
  *
@@ -44,10 +45,10 @@
  *	            (x2*a20*x0 + x2*a21*x1 + x2*a22*x2)) -
  *	           (     b0*x0 +     b1*x1 +     b2*x2)
  *
- *	Every matrix entry A_ij appears multiplied by x_i and x_j, and the givens b_i are
- *	multiplied by -x_i each. It is easy to see that with respect to δF/δx_i, only the
- *	ith row and ith column are of significance: everything else is constant with respect
- *	to changes in x_i.
+ *	Every matrix entry A_ij appears multiplied by x_i and x_j, and the
+ *	givens b_i are multiplied by -x_i each. It is easy to see that with
+ *	respect to δF/δx_i, only the ith row and ith column are of significance:
+ * 	everything else is constant with respect to changes in x_i.
  *
  *	So, by declaring
  *
@@ -71,35 +72,44 @@
  *
  *	we can write
  *
+ *
+ *
  *		δF/δx_i = 0.5*(rowsum + colsum + 2*A_ii*x_i) - b_i = 0
  *
  *	which, when solved for for x_i, gives us
  *
  *		x_i = (b_i - 0.5*(rowsum + colsum)) / A_ii.
  *
- *	Notice that for a symmetric matrix, rowsum = colsum and the above simplifies
- *	further into
+ *	Notice that for a symmetric matrix, rowsum = colsum and the above
+ *	simplifies further into
  *
  *		x_i = (b_i - rowsum) / A_ii
  *
  *	which is exactly the familiar Gauss-Seidel inner loop below.
  *
- *	A variation of this method is also known as coordinate descent, and is known to
- *	converge for Symmetric Positive (Semi-)Definite as well as diagonally dominant matrices.
+ *	A variation of this method is also known as coordinate descent, and is
+ *	known to converge for Symmetric Positive (Semi-)Definite as well as
+ *	diagonally dominant matrices.
  *
- *	The difference between a typical coordinate descent method and Gauss-Seidel is
- *	that Gauss-Seidel sets x_i straight to minimizing error, while coordinate
- *	descent may use anything from a fixed step size to arbitrarily complex dynamic
- *	adjustments. Gauss-Seidel can be viewed as a special case of coordinate descent.
+ *	The difference between a typical coordinate descent method and
+ *	Gauss-Seidel is that Gauss-Seidel sets x_i straight to minimizing error,
+ *	while coordinate descent may use anything from a fixed step size to
+ *	arbitrarily complex dynamic adjustments. Gauss-Seidel can be viewed as a
+ *	special case of coordinate descent.
  *
- *	Notice that there's two places in the above derivation, including the very
- *	starting point, where the matrix is assumed to be symmetric. Using the method
- *	for non-symmetric cases will require changes to both, the algorithm and how
- *	it is derived, but I hope the derivation here has shed enough light on the
- *	underlying principles to allow creating custom variants where needed.
+ *	Notice that there's two places in the above derivation, including the
+ *	very starting point, where the matrix is assumed to be symmetric. Using
+ *	the method for non-symmetric cases will require changes to both, the
+ *	algorithm and how it is derived, but I hope the derivation here has shed
+ *	enough light on the underlying principles to allow creating custom
+ *	variants where needed.
  *
- *	There has been a recent development of the idea, extending this algorithm to
- *	work for both, under- and overdetermined systems.
+ *	The Jacobi-method is a variation of this, where all the coordinates are
+ *	adjusted to their minimizing positions simultaneously. The Jacobi method
+ *	tends to converge to a solution slower, and tends to diverge easier.
+ *
+ *	There has been a recent development of the idea, extending this
+ *	algorithm to work for both, under- and overdetermined systems.
  *
  *	[3] Anna Ma, Deanna Needell, Aaditya Ramdas.
  *	    Convergence properties of the randomized extended Gauss-Seidel

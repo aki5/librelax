@@ -9,7 +9,7 @@
 
 #define nelem(x) (int)((sizeof(x)/sizeof((x)[0])))
 
-int diagdom = 1;
+int diagdom = 0;
 int nloops = 100;
 int (*solvers[])(double *A, int m, int n, int stride, double *b, double *x0);
 
@@ -59,7 +59,7 @@ iterate_kacz(double *A, int m, int n, int stride, double *b, double *x0)
 {
 	double maxres;
 	double *res;
-	int i, j, row;
+	int i, j;
 
 	res = malloc(n * sizeof res[0]);
 	for(i = 0; i < m; i++)
