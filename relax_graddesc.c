@@ -87,19 +87,22 @@
  *
  */
 double
-relax_graddesc(double *A, int m, int n, int stride, double *x0, double *r0, double *ar0)
+relax_graddesc(double *A, int m, int n, int stride, double *x0, double *res, double *ares)
 {
-	double a, maxres;
+	double a, restmp, maxres;
 	int i;
 
-	relax_ab(A, m, n, stride, r0, ar0);
-	a = relax_dot(r0, 1, r0, 1, n) / relax_dot(r0, 1, ar0, 1, n);
+	relax_ab(A, m, n, stride, res, ares);
+	a = relax_dot(res, 1, res, 1, n) / relax_dot(res, 1, ares, 1, n);
 
-	maxres = fabs(r0[0] - a*ar0[0]);
-	for(i = 0; i < m; i++){
-		x0[i] = x0[i] + a*r0[i];
-		r0[i] = r0[i] - a*ar0[i];
-		maxres = maxres > fabs(r0[i]) ? maxres : fabs(r0[i]);
+	x0[0] = x0[0] + a*res[0];
+	res[0] = res[0] - a*ares[0];
+	maxres = fabs(res[0]);
+	for(i = 1; i < m; i++){
+		x0[i] = x0[i] + a*res[i];
+		res[i] = res[i] - a*ares[i];
+		restmp = fabs(res[i]);
+		maxres = maxres > restmp ? maxres : restmp;
 	}
 
 	return maxres;

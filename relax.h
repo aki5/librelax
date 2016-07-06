@@ -10,8 +10,10 @@ double relax_coordesc(double *A, int m, int n, int stride, double *b, double *x0
 
 /*
  *	kaczmarz iteration
+ *	the lambda parameter specifies the relaxation, convergence is guaranteed as long
+ *	as 0.0 < lambda < 2.0 and goes to zero eventually.
  */
-int relax_kacz(double *A, int m, int n, int stride, double *b, double *x0, int rowi);
+int relax_kacz(double *A, int m, int n, int stride, double *b, double *x0, int rowi, double lambda);
 
 /*
  *	gradient descent iteration (method of steepest descent)
@@ -20,13 +22,33 @@ int relax_kacz(double *A, int m, int n, int stride, double *b, double *x0, int r
  *	of the initial residual res, which needs to be computed with relax_maxres
  *	before the first invocation of relax_steepdesc for the current problem.
  *
- *	Ar must be an n-vector, it is used to store the matrix-vector product Ar
+ *	ares must be an n-vector, it is used to store the matrix-vector product A*res
  *	and is required to be non-NULL by the routine.
  *
  *	If the caller is worried about drift due to roundoff, it is ok to recompute
  *	res at any time using relax_maxres.
  */
-double relax_graddesc(double *A, int m, int n, int stride, double *x0, double *res, double *artmp);
+double relax_graddesc(double *A, int m, int n, int stride, double *x0, double *res, double *ares);
+
+/*
+ *	conjugate gradient iteration
+ *
+ *	notice that the b-vector is not passed in explicitly, instead it is part
+ *	of the initial residual res, which needs to be computed with relax_maxres
+ *	before the first invocation of relax_steepdesc for the current problem.
+ *
+ *	dir must be an n-vector, and its contents must be identical to res on first
+ *	invocation. the routine will update the contents of dir to be what the current
+ *	line search direction is, which will differ from the residual on subsequent
+ *	iterations.
+ *
+ *	adir must be an n-vector, it is used to store the matrix-vector product A*dir
+ *	and is required to be non-NULL by the routine.
+ *
+ *	If the caller is worried about drift due to roundoff, it is acceptable to
+ *	recompute res between invocations using relax_maxres.
+ */
+double relax_conjgrad(double *A, int m, int n, int stride, double *x0, double *res, double *dir, double *adir);
 
 /*
  *	relax_solve and relax_gauss destructively solves the system

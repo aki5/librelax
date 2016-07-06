@@ -38,7 +38,7 @@
  *	    http://opt-ml.org/papers/OPT2015_paper_7.pdf
  */
 int
-relax_kacz(double *A, int m, int n, int stride, double *b, double *x0, int rowi)
+relax_kacz(double *A, int m, int n, int stride, double *b, double *x0, int rowi, double lambda)
 {
 	double rowres, fact;
 	int ioff, j;
@@ -48,7 +48,7 @@ relax_kacz(double *A, int m, int n, int stride, double *b, double *x0, int rowi)
 
 	ioff = rowi * stride;
 	rowres = relax_dot(A+ioff, 1, x0, 1, n) - b[rowi];
-	fact = rowres / relax_dot(A+ioff, 1, A+ioff, 1, n);
+	fact = lambda * rowres / relax_dot(A+ioff, 1, A+ioff, 1, n);
 	for(j = 0; j < n; j++)
 		x0[j] -= fact*A[ioff+j];
 

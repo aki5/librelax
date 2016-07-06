@@ -12,6 +12,7 @@
 
 int diagdom = 0;
 int nloops = 100;
+int maxiter = 100000;
 int (*solvers[])(double *A, int m, int n, int stride, double *b, double *x0);
 
 void
@@ -39,6 +40,7 @@ build_system(double *A, int m, int n, int stride, double *b)
 	for(i = 0; i < m; i++){
 		sigma = 0.0;
 		for(j = 0; j < n; j++){
+			//A[irow+j] = 2.0*drand48()-1.0;
 			A[irow+j] = drand48();
 			if(i != j)
 				sigma += fabs(A[irow+j]);
@@ -50,6 +52,7 @@ build_system(double *A, int m, int n, int stride, double *b)
 			A[irow+i] = sigma + drand48();
 
 		irow += stride;
+		//b[i] = 2.0*drand48()-1.0;
 		b[i] = drand48();
 	}
 }
@@ -60,24 +63,26 @@ iterate_kacz(double *A, int m, int n, int stride, double *b, double *x0)
 {
 	double maxres;
 	double *res;
-	int i, j;
+	int i;
+	//int j;
 
 	res = malloc(n * sizeof res[0]);
 	for(i = 0; i < m; i++)
 		x0[i] = 0.0;
 
-	for(i = 0; i < 100; i++){
+	for(i = 0; i < maxiter; i++){
 		feclearexcept(FE_ALL_EXCEPT);
-		for(j = 0; j < 100; j++){
-			if(relax_kacz(A, m, n, stride, b, x0, lrand48()%m) == -1){
+		//for(j = 0; j < m; j++){
+			if(relax_kacz(A, m, n, stride, b, x0, lrand48()%m, 1.0) == -1){
+			//if(relax_kacz(A, m, n, stride, b, x0, j) == -1){
 				fprintf(stderr, "relax_kacz failed\n");
 				free(res);
 				return -1;
 			}
-		}
+		//}
 		if(fetestexcept(FE_ALL_EXCEPT & ~FE_INEXACT)){
-			fprintf(stderr,
-				"floating point exception:%s%s%s%s%s\n",
+			printf(
+				"%s%s%s%s%s\n",
 				fetestexcept(FE_DIVBYZERO) ? " FE_DIVBYZERO" : "",
 				fetestexcept(FE_INEXACT) ? " FE_INEXACT" : "",
 				fetestexcept(FE_INVALID) ? " FE_INVALID" : "",
@@ -94,6 +99,8 @@ iterate_kacz(double *A, int m, int n, int stride, double *b, double *x0)
 		//fprintf(stderr, "iterate_kacz maxres %f\n", maxres);
 	}
 	free(res);
+	printf(" iter %7d", i);
+
 	return 0;
 }
 
@@ -107,12 +114,12 @@ iterate_gs(double *A, int m, int n, int stride, double *b, double *x0)
 	for(i = 0; i < m; i++)
 		x0[i] = 0.0;
 
-	for(i = 0; i < 100; i++){
+	for(i = 0; i < maxiter; i++){
 		feclearexcept(FE_ALL_EXCEPT);
 		maxres = relax_coordesc(A, m, n, stride, b, x0, NULL);
 		if(fetestexcept(FE_ALL_EXCEPT & ~FE_INEXACT)){
-			fprintf(stderr,
-				"floating point exception:%s%s%s%s%s\n",
+			printf(
+				"%s%s%s%s%s\n",
 				fetestexcept(FE_DIVBYZERO) ? " FE_DIVBYZERO" : "",
 				fetestexcept(FE_INEXACT) ? " FE_INEXACT" : "",
 				fetestexcept(FE_INVALID) ? " FE_INVALID" : "",
@@ -124,6 +131,7 @@ iterate_gs(double *A, int m, int n, int stride, double *b, double *x0)
 		if(maxres < TOLERANCE)
 			break;
 	}
+	printf(" iter %7d", i);
 	return 0;
 }
 
@@ -137,12 +145,12 @@ iterate_graddesc(double *A, int m, int n, int stride, double *b, double *x0, dou
 		x0[i] = 0.0;
 
 	maxres = relax_maxres(A, m, n, stride, b, x0, res);
-	for(i = 0; i < 100; i++){
+	for(i = 0; i < maxiter; i++){
 		feclearexcept(FE_ALL_EXCEPT);
 		maxres = relax_graddesc(A, m, n, stride, x0, res, ares);
 		if(fetestexcept(FE_ALL_EXCEPT & ~FE_INEXACT)){
-			fprintf(stderr,
-				"floating point exception:%s%s%s%s%s\n",
+			printf(
+				"%s%s%s%s%s\n",
 				fetestexcept(FE_DIVBYZERO) ? " FE_DIVBYZERO" : "",
 				fetestexcept(FE_INEXACT) ? " FE_INEXACT" : "",
 				fetestexcept(FE_INVALID) ? " FE_INVALID" : "",
@@ -152,10 +160,50 @@ iterate_graddesc(double *A, int m, int n, int stride, double *b, double *x0, dou
 			return -1;
 		}
 		if(maxres < TOLERANCE)
-			break;
-		if((i & 63) == 63)
-			maxres = relax_maxres(A, m, n, stride, b, x0, res);
+			if(relax_maxres(A, m, n, stride, b, x0, res) < TOLERANCE)
+				break;
+		//if((i & 31) == 31)
+		//	maxres = relax_maxres(A, m, n, stride, b, x0, res);
 	}
+	printf(" iter %7d", i);
+	return 0;
+}
+
+
+int
+iterate_conjgrad(double *A, int m, int n, int stride, double *b, double *x0, double *res, double *dir, double *adir)
+{
+	double maxres;
+	int i;
+
+	for(i = 0; i < m; i++)
+		x0[i] = 0.0;
+
+	maxres = relax_maxres(A, m, n, stride, b, x0, res);
+	for(i = 0; i < n; i++)
+		dir[i] = res[i];
+
+	for(i = 0; i < maxiter; i++){
+		feclearexcept(FE_ALL_EXCEPT);
+		maxres = relax_conjgrad(A, m, n, stride, x0, res, dir, adir);
+		if(fetestexcept(FE_ALL_EXCEPT & ~FE_INEXACT)){
+			printf(
+				"%s%s%s%s%s\n",
+				fetestexcept(FE_DIVBYZERO) ? " FE_DIVBYZERO" : "",
+				fetestexcept(FE_INEXACT) ? " FE_INEXACT" : "",
+				fetestexcept(FE_INVALID) ? " FE_INVALID" : "",
+				fetestexcept(FE_OVERFLOW) ? " FE_OVERFLOW" : "",
+				fetestexcept(FE_UNDERFLOW) ? " FE_UNDERFLOW" : ""
+			);
+			return -1;
+		}
+		if(maxres < TOLERANCE)
+			if(relax_maxres(A, m, n, stride, b, x0, res) < TOLERANCE)
+				break;
+		//if((i & 31) == 31)
+		//	maxres = relax_maxres(A, m, n, stride, b, x0, res);
+	}
+	printf(" iter %7d", i);
 	return 0;
 }
 
@@ -202,7 +250,7 @@ err_out:
 }
 
 int
-gauss_seidel(double *A, int m, int n, int stride, double *b, double *x0)
+coordinate_descent(double *A, int m, int n, int stride, double *b, double *x0)
 {
 	double *C, *c;
 	int err;
@@ -244,7 +292,7 @@ err_out:
 }
 
 int
-steepest_descent(double *A, int m, int n, int stride, double *b, double *x0)
+gradient_descent(double *A, int m, int n, int stride, double *b, double *x0)
 {
 	double *C, *c, *res, *ares;
 	int err;
@@ -293,7 +341,59 @@ err_out:
 	return err;
 }
 
+int
+conjugate_gradient(double *A, int m, int n, int stride, double *b, double *x0)
+{
+	double *C, *c, *res, *dir, *adir;
+	int err;
 
+	err = 0;
+	C = NULL;
+	c = NULL;
+	if(m == n){
+		memcpy(x0, b, m * sizeof b[0]);
+		adir = malloc(m * sizeof adir[0]);
+		dir = malloc(m * sizeof dir[0]);
+		res = malloc(m * sizeof res[0]);
+		if((err = iterate_conjgrad(A, m, n, stride, b, x0, res, dir, adir)) == -1){
+			err = -1;
+			goto err_out;
+		}
+	} else if(m > n){ // overdetermined, solve for least squares fit
+		C = malloc(n * n * sizeof C[0]);
+		c = malloc(m * sizeof c[0]);
+		adir = malloc(n * sizeof adir[0]);
+		dir = malloc(n * sizeof dir[0]);
+		res = malloc(n * sizeof res[0]);
+		relax_ata(A, m, n, stride, C, n);
+		relax_atb(A, m, n, stride, b, c);
+		if((err = iterate_conjgrad(C, n, n, n, c, x0, res, dir, adir)) == -1){
+			err = -1;
+			goto err_out;
+		}
+	} else { // underdetermined, solve for minimum norm
+		C = malloc(m * m * sizeof C[0]);
+		c = malloc(m * sizeof c[0]);
+		adir = malloc(m * sizeof adir[0]);
+		dir = malloc(m * sizeof dir[0]);
+		res = malloc(m * sizeof res[0]);
+		relax_aat(A, m, n, stride, C, m);
+		if((err = iterate_conjgrad(C, m, m, m, b, c, res, dir, adir)) == -1){
+			err = -1;
+			goto err_out;
+		}
+		relax_atb(A, m, n, stride, c, x0);
+	}
+err_out:
+	if(C != NULL)
+		free(C);
+	if(c != NULL)
+		free(c);
+	free(res);
+	free(dir);
+	free(adir);
+	return err;
+}
 
 int
 direct_gauss(double *A, int m, int n, int stride, double *b, double *x0)
@@ -341,6 +441,8 @@ err_out:
 		free(C);
 	if(c != NULL)
 		free(c);
+
+	printf(" iter %7d", -1);
 	return err;
 }
 
@@ -406,37 +508,53 @@ direct_svd(double *A, int m, int n, int stride, double *b, double *x0)
 		free(tmpvec);
 	}
 
+	printf(" iter %7d", -1);
 	return err;
 }
 
 int (*solvers[])(double *A, int m, int n, int stride, double *b, double *x0) = {
 	kaczmarz,
-	gauss_seidel,
-	steepest_descent,
+	gradient_descent,
+	coordinate_descent,
+	conjugate_gradient,
 	direct_gauss,
 	direct_svd,
 };
 
 char *solver_names[] = {
 	"kaczmarz",
-	"gauss_seidel",
-	"steepest_descent",
+	"gradient_descent",
+	"coordinate_descent",
+	"conjugate_gradient",
 	"direct_gauss",
 	"direct_svd",
 };
 
+int64_t
+nsec(void)
+{
+	struct timeval tv;
+	gettimeofday(&tv, NULL);
+	return ((int64_t)tv.tv_sec * 1000000000) + (int64_t)tv.tv_usec*1000;
+}
 
 int
 random_test(int input_n, int input_m)
 {
 	double *A, *b, *x0, *res;
 	double maxres;
+	int64_t stime, etime;
 	int si, m, n, stride;
 	int err;
 
 	err = 0;
-	m = input_m;
-	n = input_n;
+	if(input_m < input_n){
+		m = input_m;
+		n = input_n;
+	} else {
+		m = input_n;
+		n = input_m;
+	}
 
 	stride = n;
 	A = malloc(m * stride * sizeof A[0]);
@@ -447,10 +565,14 @@ random_test(int input_n, int input_m)
 	// A[m][n] * x[n] = b[m]
 	build_system(A, m, n, stride, b);
 	for(si = 0; si < nelem(solvers); si++){
+		printf("%dx%d %-18s", m, n, solver_names[si]);
+		fflush(stdout);
+		stime = nsec();
 		if((err = (*solvers[si])(A, m, n, stride, b, x0)) == -1)
 			continue;
+		etime = nsec();
 		maxres = relax_maxres(A, m, n, stride, b, x0, res);
-		printf("%dx%d %-18s maxres %.20f\n", m, n, solver_names[si], maxres);
+		printf(" maxres %.16f time %.6f\n", maxres, 1e-9*(etime-stime));
 	}
 
 	free(A);
