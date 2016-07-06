@@ -6,16 +6,15 @@
  *	The Conjugate Gradient iteration solves Ax = b for x
  */
 double
-relax_conjgrad(double *A, int m, int n, int stride, double *x0, double *res, double *dir, double *adir)
+relax_conjgrad(double *A, int m, int n, int stride, double *x0, double *res, double *dir, double *adir, double *reslen2)
 {
 	double restmp, maxres;
-	double alpha, beta, delta;
+	double alpha, beta, gamma;
 	int i;
 
 	relax_ab(A, m, n, stride, dir, adir);
 
-	delta = relax_dot(res, 1, res, 1, n);
-	alpha = delta / relax_dot(dir, 1, adir, 1, n);
+	alpha = *reslen2 / relax_dot(dir, 1, adir, 1, n);
 
 	x0[0] = x0[0] + alpha*dir[0];
 	res[0] = res[0] - alpha*adir[0];
@@ -27,9 +26,9 @@ relax_conjgrad(double *A, int m, int n, int stride, double *x0, double *res, dou
 		maxres = maxres > restmp ? maxres : restmp;
 	}
 
-	// this dot product will be recomputed at the start of next iteration..
-	// should introduce another argument for it (delta).
-	beta = relax_dot(res, 1, res, 1, n) / delta;
+	gamma = relax_dot(res, 1, res, 1, n);
+	beta =  gamma / *reslen2;
+	*reslen2 = gamma;
 	for(i = 0; i < m; i++){
 		dir[i] = res[i] + beta*dir[i];
 	}

@@ -173,19 +173,20 @@ iterate_graddesc(double *A, int m, int n, int stride, double *b, double *x0, dou
 int
 iterate_conjgrad(double *A, int m, int n, int stride, double *b, double *x0, double *res, double *dir, double *adir)
 {
-	double maxres;
+	double reslen2, maxres;
 	int i;
 
 	for(i = 0; i < m; i++)
 		x0[i] = 0.0;
 
 	maxres = relax_maxres(A, m, n, stride, b, x0, res);
+	reslen2 = relax_dot(res, 1, res, 1, n);
 	for(i = 0; i < n; i++)
 		dir[i] = res[i];
 
 	for(i = 0; i < maxiter; i++){
 		feclearexcept(FE_ALL_EXCEPT);
-		maxres = relax_conjgrad(A, m, n, stride, x0, res, dir, adir);
+		maxres = relax_conjgrad(A, m, n, stride, x0, res, dir, adir, &reslen2);
 		if(fetestexcept(FE_ALL_EXCEPT & ~FE_INEXACT)){
 			printf(
 				"%s%s%s%s%s\n",

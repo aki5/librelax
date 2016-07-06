@@ -45,10 +45,14 @@ double relax_graddesc(double *A, int m, int n, int stride, double *x0, double *r
  *	adir must be an n-vector, it is used to store the matrix-vector product A*dir
  *	and is required to be non-NULL by the routine.
  *
+ *	rlen2 must be a pointer to a single double variable. it needs to be initialized
+ *	to relax_dot(res, 1, res, 1, n) on the first pass, and is used to avoid recomputing
+ *	it in the beginning of every iteration.
+ *
  *	If the caller is worried about drift due to roundoff, it is acceptable to
  *	recompute res between invocations using relax_maxres.
  */
-double relax_conjgrad(double *A, int m, int n, int stride, double *x0, double *res, double *dir, double *adir);
+double relax_conjgrad(double *A, int m, int n, int stride, double *x0, double *res, double *dir, double *adir, double *rlen2);
 
 /*
  *	relax_solve and relax_gauss destructively solves the system
