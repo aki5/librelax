@@ -177,10 +177,10 @@ iterate_conjgrad(double *A, int m, int n, int stride, double *b, double *x0, dou
 		x0[i] = 0.0;
 
 	if(m > n){
-		relax_lsqr_init(A, m, n, stride, x0, b, res, dir, &reslen2);
+		relax_cgls_init(A, m, n, stride, x0, b, res, dir, &reslen2);
 		for(i = 0; i < maxiter; i++){
 			feclearexcept(FE_ALL_EXCEPT);
-			maxres = relax_lsqr(A, m, n, stride, x0, res, dir, adir, tdir, &reslen2);
+			maxres = relax_cgls(A, m, n, stride, x0, res, dir, adir, tdir, &reslen2);
 			if(fetestexcept(FE_ALL_EXCEPT & ~FE_INEXACT)){
 				printf(
 					"%s%s%s%s%s\n",

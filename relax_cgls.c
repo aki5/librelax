@@ -6,12 +6,12 @@
  *	The Conjugate Gradient Least Squares solves AᵀAx = Aᵀb for x
  *
  *	This means that the initial res and dir need to be computed by taking
- *	the transpose into account, for which relax_lsqr_init can be used,
+ *	the transpose into account, for which relax_cgls_init can be used,
  *	passing the in the m-vectors res and dir as atx and atb.
  */
 
 double
-relax_lsqr_init(double *A, int m, int n, int stride, double *x, double *b, double *atx, double *atb, double *rlen2p)
+relax_cgls_init(double *A, int m, int n, int stride, double *x, double *b, double *atx, double *atb, double *rlen2p)
 {
 	double res, maxres, reslen2;
 	int i;
@@ -37,7 +37,7 @@ relax_lsqr_init(double *A, int m, int n, int stride, double *x, double *b, doubl
 }
 
 double
-relax_lsqr(double *A, int m, int n, int stride, double *x0, double *res, double *dir, double *adir, double *tdir, double *reslen2)
+relax_cgls(double *A, int m, int n, int stride, double *x0, double *res, double *dir, double *adir, double *tdir, double *reslen2)
 {
 	double restmp, maxres;
 	double alpha, beta, gamma;

@@ -55,8 +55,8 @@ double relax_graddesc(double *A, int m, int n, int stride, double *x0, double *r
 double relax_conjgrad_init(double *A, int m, int n, int stride, double *x, double *b, double *res, double *dir, double *rlen2);
 double relax_conjgrad(double *A, int m, int n, int stride, double *x0, double *res, double *dir, double *adir, double *rlen2);
 
-double relax_lsqr_init(double *A, int m, int n, int stride, double *b, double *x, double *res, double *dir, double *rlen2);
-double relax_lsqr(double *A, int m, int n, int stride, double *x0, double *res, double *dir, double *tdir, double *adir, double *reslen2);
+double relax_cgls_init(double *A, int m, int n, int stride, double *b, double *x, double *res, double *dir, double *rlen2);
+double relax_cgls(double *A, int m, int n, int stride, double *x0, double *res, double *dir, double *tdir, double *adir, double *reslen2);
 
 /*
  *	relax_solve and relax_gauss destructively solves the system

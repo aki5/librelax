@@ -7,13 +7,13 @@ LIBRELAX_OFILES=\
 	relax_ab.o\
 	relax_ata.o\
 	relax_atb.o\
+	relax_cgls.o\
 	relax_conjgrad.o\
 	relax_coordesc.o\
 	relax_dot.o\
 	relax_gauss.o\
 	relax_graddesc.o\
 	relax_kacz.o\
-	relax_lsqr.o\
 	relax_maxres.o\
 	relax_pinvb.o\
 	relax_pinvtb.o\
