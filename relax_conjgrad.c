@@ -5,29 +5,14 @@
 /*
  *	The Conjugate Gradient iteration solves Ax = b for x
  */
-
 double
 relax_conjgrad_init(double *A, int m, int n, int stride, double *x, double *b, double *tmp, double *cpy, double *rlen2p)
 {
-	double res, maxres, reslen2;
-	int i;
-
 	relax_ab(A, m, n, stride, x, tmp);
-
-	tmp[0] = b[0] - tmp[0];
-	cpy[0] = tmp[0];
-	maxres = fabs(tmp[0]);
-	reslen2 = tmp[0] * tmp[0];
-	for(i = 1; i < m; i++){
-		tmp[i] = b[i] - tmp[i];
-		cpy[i] = tmp[i];
-		res = fabs(tmp[i]);
-		maxres = maxres > res ? maxres : res;
-		reslen2 += tmp[i] * tmp[i];
-	}
-	*rlen2p = reslen2;
-
-	return maxres;
+	relax_bypax(-1.0, tmp, 1, 1.0, b, 1, m);
+	relax_copy(cpy, 1, tmp, 1, m);
+	*rlen2p = relax_dot(tmp, 1, tmp, 1, m);
+	return 0.0;
 }
 
 

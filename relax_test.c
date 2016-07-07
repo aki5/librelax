@@ -176,7 +176,7 @@ iterate_conjgrad(double *A, int m, int n, int stride, double *b, double *x0, dou
 	for(i = 0; i < n; i++)
 		x0[i] = 0.0;
 
-	if(m > n){
+	if(m >= n){
 		res0 = relax_cgls_init(A, m, n, stride, x0, b, res, dir, &reslen2);
 		for(i = 0; i < maxiter; i++){
 			feclearexcept(FE_ALL_EXCEPT);
@@ -192,7 +192,7 @@ iterate_conjgrad(double *A, int m, int n, int stride, double *b, double *x0, dou
 				);
 				return -1;
 			}
-			if(resi/res0 < TOLERANCE)
+			if(resi/res0 < 0.1*TOLERANCE)
 				break;
 		}
 	} else {

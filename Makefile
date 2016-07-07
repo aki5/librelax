@@ -11,6 +11,7 @@ LIBRELAX_OFILES=\
 	relax_cgls.o\
 	relax_conjgrad.o\
 	relax_coordesc.o\
+	relax_copy.o\
 	relax_dot.o\
 	relax_gauss.o\
 	relax_graddesc.o\

@@ -14,14 +14,10 @@
 double
 relax_cgls_init(double *A, int m, int n, int stride, double *x, double *b, double *res, double *dir, double *rlen2p)
 {
-	int i;
-
-	relax_ab(A, m, n, stride, x, dir);
-	for(i = 0; i < m; i++)
-		res[i] = b[i] - dir[i];
+	relax_ab(A, m, n, stride, x, res);
+	relax_bypax(-1.0, res, 1, 1.0, b, 1, m);
 	relax_atb(A, m, n, stride, res, dir);
 	*rlen2p = relax_dot(dir, 1, dir, 1, n);
-
 	return sqrt(*rlen2p);
 }
 
