@@ -55,8 +55,8 @@ double relax_graddesc(double *A, int m, int n, int stride, double *x0, double *r
 double relax_conjgrad_init(double *A, int m, int n, int stride, double *x, double *b, double *res, double *dir, double *rlen2);
 double relax_conjgrad(double *A, int m, int n, int stride, double *x0, double *res, double *dir, double *adir, double *rlen2);
 
-double relax_cgls_init(double *A, int m, int n, int stride, double *x, double *b, double *res, double *dir, double *tmp, double *reslen2);
-double relax_cgls(double *A, int m, int n, int stride, double *x0, double *res, double *dir, double *tdir, double *adir, double *reslen2);
+double relax_cgls_init(double *A, int m, int n, int stride, double *x, double *b, double *res, double *dir, double *reslen2);
+double relax_cgls(double *A, int m, int n, int stride, double *x0, double *res, double *dir, double *adir, double *reslen2);
 
 /*
  *	relax_solve and relax_gauss destructively solves the system
@@ -157,3 +157,11 @@ double relax_maxres(double *A, int m, int n, int stride, double *x, double *b, d
  *	but should be passed in as 1 for row vectors or when using a matrix row.
  */
 double relax_dot(double *a, int astride, double *b, int bstride, int n);
+
+/*
+ *	relax_bypax computes y = beta*y + alpha*x for scalar alpha and n-vectors y and x.
+ *
+ *	the stride parameters can be used to use a matrix column as a vector,
+ *	but should be passed in as 1 for row vectors or when using a matrix row.
+ */
+void relax_bypax(double beta, double *y, int ystride, double alpha, double *x, int xstride, int n);

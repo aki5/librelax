@@ -1,3 +1,4 @@
+#include <stdio.h>
 #include <stddef.h>
 #include <math.h>
 #include "relax.h"
@@ -11,63 +12,40 @@
  */
 
 double
-relax_cgls_init(double *A, int m, int n, int stride, double *x, double *b, double *atx, double *atb, double *tmp, double *rlen2p)
+relax_cgls_init(double *A, int m, int n, int stride, double *x, double *b, double *res, double *dir, double *rlen2p)
 {
-	double res, maxres, reslen2;
 	int i;
 
-	relax_ab(A, m, n, stride, x, tmp);
-	relax_atb(A, m, n, stride, tmp, atx);
-	relax_atb(A, m, n, stride, b, atb);
+	relax_ab(A, m, n, stride, x, dir);
+	for(i = 0; i < m; i++)
+		res[i] = b[i] - dir[i];
+	relax_atb(A, m, n, stride, res, dir);
+	*rlen2p = relax_dot(dir, 1, dir, 1, n);
 
-	atx[0] = atb[0] - atx[0];
-	atb[0] = atx[0];
-	reslen2 = atx[0] * atx[0];
-	maxres = fabs(atx[0]);
-	for(i = 1; i < n; i++){
-		atx[i] = atb[i] - atx[i];
-		atb[i] = atx[i];
-		res = fabs(atx[i]);
-		maxres = maxres > res ? maxres : res;
-		reslen2 += atx[i] * atx[i];
-	}
-	*rlen2p = reslen2;
-
-	return maxres;
+	return sqrt(*rlen2p);
 }
 
 double
-relax_cgls(double *A, int m, int n, int stride, double *x0, double *res, double *dir, double *adir, double *tdir, double *reslen2)
+relax_cgls(double *A, int m, int n, int stride, double *x0, double *res, double *dir, double *tmp, double *reslen2)
 {
-	double restmp, maxres;
 	double alpha, beta, gamma;
-	int i;
 
-	relax_ab(A, m, n, stride, dir, tdir);
-	relax_atb(A, m, n, stride, tdir, adir);
+	relax_ab(A, m, n, stride, dir, tmp); // q = Ap
 
-	alpha = *reslen2 / relax_dot(dir, 1, adir, 1, n);
+	gamma = relax_dot(tmp, 1, tmp, 1, m);
+	if(gamma <= 0.0)
+		fprintf(stderr, "relax_cgls: system not definite\n");
+	alpha = *reslen2 / gamma;
 
-	x0[0] = x0[0] + alpha*dir[0];
-	res[0] = res[0] - alpha*adir[0];
-	gamma = res[0]*res[0];
-	maxres = fabs(res[0]);
-	for(i = 1; i < n; i++){
-		x0[i] = x0[i] + alpha*dir[i];
-		res[i] = res[i] - alpha*adir[i];
-		restmp = fabs(res[i]);
-		maxres = maxres > restmp ? maxres : restmp;
-		gamma += res[i]*res[i];
-	}
+	relax_bypax(1.0, x0, 1, alpha, dir, 1, n);
+	relax_bypax(1.0, res, 1, -alpha, tmp, 1, m);
+
+	relax_atb(A, m, n, stride, res, tmp);
+	gamma = relax_dot(tmp, 1, tmp, 1, n);
 
 	beta =  gamma / *reslen2;
+	relax_bypax(beta, dir, 1, 1.0, tmp, 1, n);
 	*reslen2 = gamma;
-	for(i = 0; i < n; i++){
-		dir[i] = res[i] + beta*dir[i];
-	}
 
-	// |Aᵀr| / |A||r| is a measure of fitness
-	// that should be useful for least squares.
-
-	return maxres;
+	return sqrt(gamma);
 }

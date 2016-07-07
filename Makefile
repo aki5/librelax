@@ -7,6 +7,7 @@ LIBRELAX_OFILES=\
 	relax_ab.o\
 	relax_ata.o\
 	relax_atb.o\
+	relax_bypax.o\
 	relax_cgls.o\
 	relax_conjgrad.o\
 	relax_coordesc.o\
