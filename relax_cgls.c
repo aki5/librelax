@@ -11,13 +11,13 @@
  */
 
 double
-relax_cgls_init(double *A, int m, int n, int stride, double *x, double *b, double *atx, double *atb, double *rlen2p)
+relax_cgls_init(double *A, int m, int n, int stride, double *x, double *b, double *atx, double *atb, double *tmp, double *rlen2p)
 {
 	double res, maxres, reslen2;
 	int i;
 
-	relax_ab(A, m, n, stride, x, atb);
-	relax_atb(A, m, n, stride, atb, atx);
+	relax_ab(A, m, n, stride, x, tmp);
+	relax_atb(A, m, n, stride, tmp, atx);
 	relax_atb(A, m, n, stride, b, atb);
 
 	atx[0] = atb[0] - atx[0];

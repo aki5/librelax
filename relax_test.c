@@ -177,7 +177,7 @@ iterate_conjgrad(double *A, int m, int n, int stride, double *b, double *x0, dou
 		x0[i] = 0.0;
 
 	if(m > n){
-		relax_cgls_init(A, m, n, stride, x0, b, res, dir, &reslen2);
+		relax_cgls_init(A, m, n, stride, x0, b, res, dir, tdir, &reslen2);
 		for(i = 0; i < maxiter; i++){
 			feclearexcept(FE_ALL_EXCEPT);
 			maxres = relax_cgls(A, m, n, stride, x0, res, dir, adir, tdir, &reslen2);
