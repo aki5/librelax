@@ -3,7 +3,7 @@
 #include "relax.h"
 
 double
-relax_maxres(double *A, int m, int n, int stride, double *b, double *x, double *tmp)
+relax_maxres(double *A, int m, int n, int stride, double *x, double *b, double *tmp)
 {
 	double res, maxres;
 	int i;

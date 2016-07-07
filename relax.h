@@ -52,7 +52,11 @@ double relax_graddesc(double *A, int m, int n, int stride, double *x0, double *r
  *	If the caller is worried about drift due to roundoff, it is acceptable to
  *	recompute res between invocations using relax_maxres.
  */
+double relax_conjgrad_init(double *A, int m, int n, int stride, double *x, double *b, double *res, double *dir, double *rlen2);
 double relax_conjgrad(double *A, int m, int n, int stride, double *x0, double *res, double *dir, double *adir, double *rlen2);
+
+double relax_lsqr_init(double *A, int m, int n, int stride, double *b, double *x, double *res, double *dir, double *rlen2);
+double relax_lsqr(double *A, int m, int n, int stride, double *x0, double *res, double *dir, double *tdir, double *adir, double *reslen2);
 
 /*
  *	relax_solve and relax_gauss destructively solves the system
@@ -144,7 +148,7 @@ void relax_ab(double *A, int m, int n, int astride, double *b, double *c);
  *	Relax_maxres computes the residual vector b - Ax for a system Ax = b
  *	and returns the maximum absolute value in that vector.
  */
-double relax_maxres(double *A, int m, int n, int stride, double *b, double *x, double *res);
+double relax_maxres(double *A, int m, int n, int stride, double *x, double *b, double *res);
 
 /*
  *	relax_dot computes the dot product between the vectors a and b.

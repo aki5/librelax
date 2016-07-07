@@ -93,10 +93,9 @@ iterate_kacz(double *A, int m, int n, int stride, double *b, double *x0)
 			return -1;
 		}
 
-		maxres = relax_maxres(A, m, n, stride, b, x0, res);
+		maxres = relax_maxres(A, m, n, stride, x0, b, res);
 		if(maxres < TOLERANCE)
 			break;
-		//fprintf(stderr, "iterate_kacz maxres %f\n", maxres);
 	}
 	free(res);
 	printf(" iter %7d", i);
@@ -144,7 +143,7 @@ iterate_graddesc(double *A, int m, int n, int stride, double *b, double *x0, dou
 	for(i = 0; i < m; i++)
 		x0[i] = 0.0;
 
-	maxres = relax_maxres(A, m, n, stride, b, x0, res);
+	maxres = relax_maxres(A, m, n, stride, x0, b, res);
 	for(i = 0; i < maxiter; i++){
 		feclearexcept(FE_ALL_EXCEPT);
 		maxres = relax_graddesc(A, m, n, stride, x0, res, ares);
@@ -160,10 +159,8 @@ iterate_graddesc(double *A, int m, int n, int stride, double *b, double *x0, dou
 			return -1;
 		}
 		if(maxres < TOLERANCE)
-			if(relax_maxres(A, m, n, stride, b, x0, res) < TOLERANCE)
+			if(relax_maxres(A, m, n, stride, x0, b, res) < TOLERANCE)
 				break;
-		//if((i & 31) == 31)
-		//	maxres = relax_maxres(A, m, n, stride, b, x0, res);
 	}
 	printf(" iter %7d", i);
 	return 0;
@@ -179,11 +176,7 @@ iterate_conjgrad(double *A, int m, int n, int stride, double *b, double *x0, dou
 	for(i = 0; i < m; i++)
 		x0[i] = 0.0;
 
-	maxres = relax_maxres(A, m, n, stride, b, x0, res);
-	reslen2 = relax_dot(res, 1, res, 1, n);
-	for(i = 0; i < n; i++)
-		dir[i] = res[i];
-
+	relax_conjgrad_init(A, m, n, stride, x0, b, res, dir, &reslen2);
 	for(i = 0; i < maxiter; i++){
 		feclearexcept(FE_ALL_EXCEPT);
 		maxres = relax_conjgrad(A, m, n, stride, x0, res, dir, adir, &reslen2);
@@ -199,10 +192,8 @@ iterate_conjgrad(double *A, int m, int n, int stride, double *b, double *x0, dou
 			return -1;
 		}
 		if(maxres < TOLERANCE)
-			if(relax_maxres(A, m, n, stride, b, x0, res) < TOLERANCE)
+			if(relax_maxres(A, m, n, stride, x0, b, res) < TOLERANCE)
 				break;
-		//if((i & 31) == 31)
-		//	maxres = relax_maxres(A, m, n, stride, b, x0, res);
 	}
 	printf(" iter %7d", i);
 	return 0;
@@ -549,6 +540,8 @@ random_test(int input_n, int input_m)
 	int err;
 
 	err = 0;
+
+#if 0
 	if(input_m < input_n){
 		m = input_m;
 		n = input_n;
@@ -556,6 +549,10 @@ random_test(int input_n, int input_m)
 		m = input_n;
 		n = input_m;
 	}
+#else
+	m = input_n;
+	n = input_m;
+#endif
 
 	stride = n;
 	A = malloc(m * stride * sizeof A[0]);
@@ -572,7 +569,7 @@ random_test(int input_n, int input_m)
 		if((err = (*solvers[si])(A, m, n, stride, b, x0)) == -1)
 			continue;
 		etime = nsec();
-		maxres = relax_maxres(A, m, n, stride, b, x0, res);
+		maxres = relax_maxres(A, m, n, stride, x0, b, res);
 		printf(" maxres %.16f time %.6f\n", maxres, 1e-9*(etime-stime));
 	}
 
