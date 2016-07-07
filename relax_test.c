@@ -168,32 +168,54 @@ iterate_graddesc(double *A, int m, int n, int stride, double *b, double *x0, dou
 
 
 int
-iterate_conjgrad(double *A, int m, int n, int stride, double *b, double *x0, double *res, double *dir, double *adir)
+iterate_conjgrad(double *A, int m, int n, int stride, double *b, double *x0, double *res, double *dir, double *adir, double *tdir)
 {
 	double reslen2, maxres;
 	int i;
 
-	for(i = 0; i < m; i++)
+	for(i = 0; i < n; i++)
 		x0[i] = 0.0;
 
-	relax_conjgrad_init(A, m, n, stride, x0, b, res, dir, &reslen2);
-	for(i = 0; i < maxiter; i++){
-		feclearexcept(FE_ALL_EXCEPT);
-		maxres = relax_conjgrad(A, m, n, stride, x0, res, dir, adir, &reslen2);
-		if(fetestexcept(FE_ALL_EXCEPT & ~FE_INEXACT)){
-			printf(
-				"%s%s%s%s%s\n",
-				fetestexcept(FE_DIVBYZERO) ? " FE_DIVBYZERO" : "",
-				fetestexcept(FE_INEXACT) ? " FE_INEXACT" : "",
-				fetestexcept(FE_INVALID) ? " FE_INVALID" : "",
-				fetestexcept(FE_OVERFLOW) ? " FE_OVERFLOW" : "",
-				fetestexcept(FE_UNDERFLOW) ? " FE_UNDERFLOW" : ""
-			);
-			return -1;
+	if(m > n){
+		relax_lsqr_init(A, m, n, stride, x0, b, res, dir, &reslen2);
+		for(i = 0; i < maxiter; i++){
+			feclearexcept(FE_ALL_EXCEPT);
+			maxres = relax_lsqr(A, m, n, stride, x0, res, dir, adir, tdir, &reslen2);
+			if(fetestexcept(FE_ALL_EXCEPT & ~FE_INEXACT)){
+				printf(
+					"%s%s%s%s%s\n",
+					fetestexcept(FE_DIVBYZERO) ? " FE_DIVBYZERO" : "",
+					fetestexcept(FE_INEXACT) ? " FE_INEXACT" : "",
+					fetestexcept(FE_INVALID) ? " FE_INVALID" : "",
+					fetestexcept(FE_OVERFLOW) ? " FE_OVERFLOW" : "",
+					fetestexcept(FE_UNDERFLOW) ? " FE_UNDERFLOW" : ""
+				);
+				return -1;
+			}
+			if(maxres < TOLERANCE)
+				if(relax_maxres(A, m, n, stride, x0, b, res) < TOLERANCE)
+					break;
 		}
-		if(maxres < TOLERANCE)
-			if(relax_maxres(A, m, n, stride, x0, b, res) < TOLERANCE)
-				break;
+	} else {
+		relax_conjgrad_init(A, m, n, stride, x0, b, res, dir, &reslen2);
+		for(i = 0; i < maxiter; i++){
+			feclearexcept(FE_ALL_EXCEPT);
+			maxres = relax_conjgrad(A, m, n, stride, x0, res, dir, adir, &reslen2);
+			if(fetestexcept(FE_ALL_EXCEPT & ~FE_INEXACT)){
+				printf(
+					"%s%s%s%s%s\n",
+					fetestexcept(FE_DIVBYZERO) ? " FE_DIVBYZERO" : "",
+					fetestexcept(FE_INEXACT) ? " FE_INEXACT" : "",
+					fetestexcept(FE_INVALID) ? " FE_INVALID" : "",
+					fetestexcept(FE_OVERFLOW) ? " FE_OVERFLOW" : "",
+					fetestexcept(FE_UNDERFLOW) ? " FE_UNDERFLOW" : ""
+				);
+				return -1;
+			}
+			if(maxres < TOLERANCE)
+				if(relax_maxres(A, m, n, stride, x0, b, res) < TOLERANCE)
+					break;
+		}
 	}
 	printf(" iter %7d", i);
 	return 0;
@@ -336,30 +358,27 @@ err_out:
 int
 conjugate_gradient(double *A, int m, int n, int stride, double *b, double *x0)
 {
-	double *C, *c, *res, *dir, *adir;
+	double *C, *c, *res, *dir, *adir, *tdir;
 	int err;
 
 	err = 0;
 	C = NULL;
 	c = NULL;
+	tdir = NULL;
 	if(m == n){
-		memcpy(x0, b, m * sizeof b[0]);
 		adir = malloc(m * sizeof adir[0]);
 		dir = malloc(m * sizeof dir[0]);
 		res = malloc(m * sizeof res[0]);
-		if((err = iterate_conjgrad(A, m, n, stride, b, x0, res, dir, adir)) == -1){
+		if((err = iterate_conjgrad(A, m, n, stride, b, x0, res, dir, adir, tdir)) == -1){
 			err = -1;
 			goto err_out;
 		}
 	} else if(m > n){ // overdetermined, solve for least squares fit
-		C = malloc(n * n * sizeof C[0]);
-		c = malloc(m * sizeof c[0]);
-		adir = malloc(n * sizeof adir[0]);
-		dir = malloc(n * sizeof dir[0]);
-		res = malloc(n * sizeof res[0]);
-		relax_ata(A, m, n, stride, C, n);
-		relax_atb(A, m, n, stride, b, c);
-		if((err = iterate_conjgrad(C, n, n, n, c, x0, res, dir, adir)) == -1){
+		tdir = malloc(m * sizeof tdir[0]);
+		adir = malloc(m * sizeof adir[0]);
+		dir = malloc(m * sizeof dir[0]);
+		res = malloc(m * sizeof res[0]);
+		if((err = iterate_conjgrad(A, m, n, stride, b, x0, res, dir, adir, tdir)) == -1){
 			err = -1;
 			goto err_out;
 		}
@@ -370,7 +389,7 @@ conjugate_gradient(double *A, int m, int n, int stride, double *b, double *x0)
 		dir = malloc(m * sizeof dir[0]);
 		res = malloc(m * sizeof res[0]);
 		relax_aat(A, m, n, stride, C, m);
-		if((err = iterate_conjgrad(C, m, m, m, b, c, res, dir, adir)) == -1){
+		if((err = iterate_conjgrad(C, m, m, m, b, c, res, dir, adir, tdir)) == -1){
 			err = -1;
 			goto err_out;
 		}
@@ -381,9 +400,12 @@ err_out:
 		free(C);
 	if(c != NULL)
 		free(c);
+	if(tdir != NULL)
+		free(tdir);
 	free(res);
 	free(dir);
 	free(adir);
+
 	return err;
 }
 
