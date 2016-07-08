@@ -11,7 +11,8 @@
 #define TOLERANCE 1e-12
 
 int diagdom = 0;
-int nloops = 100;
+int rndmax = 50;
+int nloops = 10;
 int maxiter = 100000;
 int (*solvers[])(double *A, int m, int n, int stride, double *b, double *x0);
 
@@ -168,19 +169,18 @@ iterate_graddesc(double *A, int m, int n, int stride, double *b, double *x0, dou
 
 
 int
-iterate_conjgrad(double *A, int m, int n, int stride, double *b, double *x0, double *res, double *dir, double *adir)
+iterate_conjgrad(double *A, int m, int n, int stride, double *b, double *x0, double *res, double *dir, double *tmp, double *tmp2)
 {
 	double reslen2, res0, resi;
 	int i;
 
-	for(i = 0; i < n; i++)
-		x0[i] = 0.0;
-
 	if(m >= n){
+		for(i = 0; i < n; i++)
+			x0[i] = 0.0;
 		res0 = relax_cgls_init(A, m, n, stride, x0, b, res, dir, &reslen2);
 		for(i = 0; i < maxiter; i++){
 			feclearexcept(FE_ALL_EXCEPT);
-			resi = relax_cgls(A, m, n, stride, x0, res, dir, adir, &reslen2);
+			resi = relax_cgls(A, m, n, stride, x0, res, dir, tmp, &reslen2);
 			if(fetestexcept(FE_ALL_EXCEPT & ~FE_INEXACT)){
 				printf(
 					"%s%s%s%s%s\n",
@@ -196,10 +196,34 @@ iterate_conjgrad(double *A, int m, int n, int stride, double *b, double *x0, dou
 				break;
 		}
 	} else {
+		for(i = 0; i < m; i++)
+			x0[i] = 0.0;
+		res0 = relax_cgmn_init(A, m, n, stride, x0, b, res, dir, &reslen2);
+		for(i = 0; i < maxiter; i++){
+			feclearexcept(FE_ALL_EXCEPT);
+			resi = relax_cgmn(A, m, n, stride, x0, res, dir, tmp, tmp2, &reslen2);
+			if(fetestexcept(FE_ALL_EXCEPT & ~FE_INEXACT)){
+				printf(
+					"%s%s%s%s%s\n",
+					fetestexcept(FE_DIVBYZERO) ? " FE_DIVBYZERO" : "",
+					fetestexcept(FE_INEXACT) ? " FE_INEXACT" : "",
+					fetestexcept(FE_INVALID) ? " FE_INVALID" : "",
+					fetestexcept(FE_OVERFLOW) ? " FE_OVERFLOW" : "",
+					fetestexcept(FE_UNDERFLOW) ? " FE_UNDERFLOW" : ""
+				);
+				return -1;
+			}
+			if(resi/res0 < 0.0001*TOLERANCE)
+				break;
+		}
+	}
+/*else {
+		for(i = 0; i < n; i++)
+			x0[i] = 0.0;
 		res0 = relax_conjgrad_init(A, m, n, stride, x0, b, res, dir, &reslen2);
 		for(i = 0; i < maxiter; i++){
 			feclearexcept(FE_ALL_EXCEPT);
-			resi = relax_conjgrad(A, m, n, stride, x0, res, dir, adir, &reslen2);
+			resi = relax_conjgrad(A, m, n, stride, x0, res, dir, tmp, &reslen2);
 			if(fetestexcept(FE_ALL_EXCEPT & ~FE_INEXACT)){
 				printf(
 					"%s%s%s%s%s\n",
@@ -218,6 +242,7 @@ iterate_conjgrad(double *A, int m, int n, int stride, double *b, double *x0, dou
 			}
 		}
 	}
+*/
 	printf(" iter %7d", i);
 	return 0;
 }
@@ -359,49 +384,36 @@ err_out:
 int
 conjugate_gradient(double *A, int m, int n, int stride, double *b, double *x0)
 {
-	double *C, *c, *res, *dir, *adir;
+	double *y, *res, *dir, *tmp;
 	int err;
 
 	err = 0;
-	C = NULL;
-	c = NULL;
-	if(m == n){
-		adir = malloc(m * sizeof adir[0]);
+	y = NULL;
+	if(m >= n){ // (over)determined, solve for least squares
+		tmp = malloc(m * sizeof tmp[0]);
 		dir = malloc(m * sizeof dir[0]);
 		res = malloc(m * sizeof res[0]);
-		if((err = iterate_conjgrad(A, m, n, stride, b, x0, res, dir, adir)) == -1){
-			err = -1;
-			goto err_out;
-		}
-	} else if(m > n){ // overdetermined, solve for least squares fit
-		adir = malloc(m * sizeof adir[0]);
-		dir = malloc(m * sizeof dir[0]);
-		res = malloc(m * sizeof res[0]);
-		if((err = iterate_conjgrad(A, m, n, stride, b, x0, res, dir, adir)) == -1){
+		if((err = iterate_conjgrad(A, m, n, stride, b, x0, res, dir, tmp, NULL)) == -1){
 			err = -1;
 			goto err_out;
 		}
 	} else { // underdetermined, solve for minimum norm
-		C = malloc(m * m * sizeof C[0]);
-		c = malloc(m * sizeof c[0]);
-		adir = malloc(m * sizeof adir[0]);
-		dir = malloc(m * sizeof dir[0]);
+		y = malloc(m * sizeof y[0]);
+		tmp = malloc(m * sizeof tmp[0]);
+		dir = malloc(n * sizeof dir[0]);
 		res = malloc(m * sizeof res[0]);
-		relax_aat(A, m, n, stride, C, m);
-		if((err = iterate_conjgrad(C, m, m, m, b, c, res, dir, adir)) == -1){
+		if((err = iterate_conjgrad(A, m, n, stride, b, y, res, dir, tmp, x0)) == -1){
 			err = -1;
 			goto err_out;
 		}
-		relax_atb(A, m, n, stride, c, x0);
+		relax_atb(A, m, n, stride, y, x0);
 	}
 err_out:
-	if(C != NULL)
-		free(C);
-	if(c != NULL)
-		free(c);
+	if(y != NULL)
+		free(y);
 	free(res);
 	free(dir);
-	free(adir);
+	free(tmp);
 
 	return err;
 }
@@ -603,12 +615,11 @@ int
 main(void)
 {
 	struct timeval tval;
-	int loop, rndmax;
+	int loop;
 
 	gettimeofday(&tval, NULL);
 	srand48(tval.tv_sec ^ tval.tv_usec);
 
-	rndmax = 50;
 	for(loop = 0; loop < nloops; loop++){
 		random_test(rndmax + lrand48()%rndmax, rndmax + lrand48()%rndmax);
 		printf("\n");
