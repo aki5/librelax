@@ -192,11 +192,11 @@ iterate_conjgrad(double *A, int m, int n, int stride, double *b, double *x0, dou
 				);
 				return -1;
 			}
-			if(resi/res0 < 0.1*TOLERANCE)
+			if(resi/res0 < 0.0001*TOLERANCE)
 				break;
 		}
 	} else {
-		relax_conjgrad_init(A, m, n, stride, x0, b, res, dir, &reslen2);
+		res0 = relax_conjgrad_init(A, m, n, stride, x0, b, res, dir, &reslen2);
 		for(i = 0; i < maxiter; i++){
 			feclearexcept(FE_ALL_EXCEPT);
 			resi = relax_conjgrad(A, m, n, stride, x0, res, dir, adir, &reslen2);
@@ -211,9 +211,11 @@ iterate_conjgrad(double *A, int m, int n, int stride, double *b, double *x0, dou
 				);
 				return -1;
 			}
-			if(resi < TOLERANCE)
+			if(resi/res0 < 0.0001*TOLERANCE){
 				if(relax_maxres(A, m, n, stride, x0, b, res) < TOLERANCE)
 					break;
+				fprintf(stderr, "whoop di doo!\n");
+			}
 		}
 	}
 	printf(" iter %7d", i);

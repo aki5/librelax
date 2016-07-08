@@ -26,7 +26,7 @@ relax_cgls(double *A, int m, int n, int stride, double *x0, double *res, double 
 {
 	double alpha, beta, gamma;
 
-	relax_ab(A, m, n, stride, dir, tmp); // q = Ap
+	relax_ab(A, m, n, stride, dir, tmp);
 	gamma = relax_dot(tmp, 1, tmp, 1, m);
 	alpha = *reslen2 / gamma;
 
