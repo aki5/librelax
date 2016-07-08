@@ -8,10 +8,10 @@
 #include "relax.h"
 
 #define nelem(x) (int)((sizeof(x)/sizeof((x)[0])))
-#define TOLERANCE 1e-12
+#define TOLERANCE 1e-14
 
 int diagdom = 0;
-int rndmax = 50;
+int rndmax = 30;
 int nloops = 10;
 int maxiter = 100000;
 int (*solvers[])(double *A, int m, int n, int stride, double *b, double *x0);
@@ -192,7 +192,7 @@ iterate_conjgrad(double *A, int m, int n, int stride, double *b, double *x0, dou
 				);
 				return -1;
 			}
-			if(resi/res0 < 0.0001*TOLERANCE)
+			if(resi/res0 < TOLERANCE)
 				break;
 		}
 	} else {
@@ -213,8 +213,10 @@ iterate_conjgrad(double *A, int m, int n, int stride, double *b, double *x0, dou
 				);
 				return -1;
 			}
-			if(resi/res0 < 0.0001*TOLERANCE)
+			if(resi/res0 < TOLERANCE){
+				relax_atb(A, m, n, stride, x0, tmp2);
 				break;
+			}
 		}
 	}
 /*else {
@@ -406,7 +408,6 @@ conjugate_gradient(double *A, int m, int n, int stride, double *b, double *x0)
 			err = -1;
 			goto err_out;
 		}
-		relax_atb(A, m, n, stride, y, x0);
 	}
 err_out:
 	if(y != NULL)
