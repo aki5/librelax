@@ -27,10 +27,7 @@ relax_cgls(double *A, int m, int n, int stride, double *x0, double *res, double 
 	double alpha, beta, gamma;
 
 	relax_ab(A, m, n, stride, dir, tmp); // q = Ap
-
 	gamma = relax_dot(tmp, 1, tmp, 1, m);
-	if(gamma <= 0.0)
-		fprintf(stderr, "relax_cgls: system not definite\n");
 	alpha = *reslen2 / gamma;
 
 	relax_bypax(1.0, x0, 1, alpha, dir, 1, n);
@@ -38,7 +35,6 @@ relax_cgls(double *A, int m, int n, int stride, double *x0, double *res, double 
 
 	relax_atb(A, m, n, stride, res, tmp);
 	gamma = relax_dot(tmp, 1, tmp, 1, n);
-
 	beta =  gamma / *reslen2;
 	relax_bypax(beta, dir, 1, 1.0, tmp, 1, n);
 	*reslen2 = gamma;
